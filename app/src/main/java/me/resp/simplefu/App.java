@@ -3,28 +3,26 @@
  */
 package me.resp.simplefu;
 
-@Command(name = "checksum", mixinStandardHelpOptions = true, version = "checksum 4.0",
-         description = "Prints the checksum (SHA-256 by default) of a file to STDOUT.")
+import java.util.concurrent.Callable;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
+@Command(name = "simplefu", mixinStandardHelpOptions = true, version = "simplefu 1.0", description = "a companion tool for resp.me deployments")
 public class App implements Callable<Integer> {
 
-    @Parameters(index = "0", description = "The file whose checksum to calculate.")
-    private File file;
-
-    @Option(names = {"-a", "--algorithm"}, description = "MD5, SHA-1, SHA-256, ...")
-    private String algorithm = "SHA-256";
+    @Option(names = {"--files-from"}, description = "a file containing a list of file paths to copy and backup")
+    private String filesFrom;
 
     @Override
     public Integer call() throws Exception { // your business logic goes here...
-        byte[] fileContents = Files.readAllBytes(file.toPath());
-        byte[] digest = MessageDigest.getInstance(algorithm).digest(fileContents);
-        System.out.printf("%0" + (digest.length*2) + "x%n", new BigInteger(1, digest));
+        System.out.println(filesFrom);
         return 0;
     }
 
-
-
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new CheckSum()).execute(args);
+        int exitCode = new CommandLine(new App()).execute("--files-from", "test.txt");
         System.exit(exitCode);
     }
 }
