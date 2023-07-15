@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 @Command(name = "simplefu", mixinStandardHelpOptions = true, version = "simplefu 1.0", description = "a companion tool for resp.me deployments")
 public class App implements Callable<Integer> {
@@ -43,8 +44,7 @@ public class App implements Callable<Integer> {
     @Command(name = "backup", description = "backup files")
     public Integer backup(@Option(names = {
             "--backup-to" }, description = "the zip file to store the backup.") String backupTo,
-            @Option(names = {
-                    "--input-files" }, description = "the files in this list will be copied only if they do not exist in the destination") List<String> inputFiles)
+            @Parameters(index = "0", arity = "1..*", description = "files which list the files to process.") List<String> inputFiles)
             throws IOException {
 
         BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
@@ -57,16 +57,15 @@ public class App implements Callable<Integer> {
                                 throw new RuntimeException(e);
                             }
                         }).collect(Collectors.toList()),
-                Path.of(backupTo));
+                backupTo == null ? null : Path.of(backupTo));
         backupRestoreTask.backup();
         return 0;
     }
 
-    @Command(name = "backup", description = "restore files")
+    @Command(name = "restore", description = "restore files")
     public Integer restore(@Option(names = {
-            "--backup-file" }, description = "the zip file to store the backup.") String backupFile,
-            @Option(names = {
-                    "--input-files" }, description = "all the files contains the list of files.") List<String> inputFiles)
+            "--restore-from" }, description = "the zip file to store the backup.") String backupFile,
+            @Parameters(index = "0", arity = "1..*", description = "files list the files to process.") List<String> inputFiles)
             throws IOException {
 
         BackupRestoreTask backupRestoreTask = new BackupRestoreTask(

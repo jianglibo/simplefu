@@ -1,2 +1,0 @@
-fixtures/zip-playground/copy-if-missing.txt -> notingit
-fixtures/zip-playground/adir/nb.txt -> notingit/b.txt

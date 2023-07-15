@@ -1,3 +1,0 @@
-# the relative path is relative to the working directory.
-fixtures/zip-playground/a.txt -> notingit
-fixtures/zip-playground/adir/b.txt -> notingit

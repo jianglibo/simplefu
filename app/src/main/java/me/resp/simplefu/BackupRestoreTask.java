@@ -33,7 +33,11 @@ public class BackupRestoreTask {
 		try (ZipTask zipTask = new ZipTask(backupFile, ZipNameType.ABSOLUTE);) {
 			zipTask.start(false);
 			for (CopyItem item : items) {
-				zipTask.push(Path.of(item.getCopyTo()));
+				Path copyToPath = Path.of(item.getCopyTo());
+				if (Files.isDirectory(copyToPath)) {
+					copyToPath = copyToPath.resolve(Path.of(item.getCopyFrom()).getFileName());
+				}
+				zipTask.push(copyToPath);
 			}
 		}
 		return backupFile;

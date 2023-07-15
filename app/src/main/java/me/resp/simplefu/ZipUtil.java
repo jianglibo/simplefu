@@ -168,8 +168,19 @@ public class ZipUtil {
         return maybeAbsolutePath;
     }
 
+    public static String printCopyFromAndTo(Path copyFrom, Path copyTo) {
+        String message = String.format("Copying %s(%s) --> %s(%s)", copyFrom,
+                copyFrom.getFileSystem().provider().getScheme(), copyTo,
+                copyTo.getFileSystem().provider().getScheme());
+        System.out.println(message);
+        return message;
+    }
+
     public static Path copyFile(Path copyFrom, Path copyTo) throws IOException {
-        System.out.println("copyFrom: " + copyFrom + ", copyTo: " + copyTo);
+        if (Files.isDirectory(copyFrom)) {
+            throw new IOException(printCopyFromAndTo(copyFrom, copyTo));
+        }
+        printCopyFromAndTo(copyFrom, copyTo);
         return Files.copy(copyFrom, copyTo, StandardCopyOption.REPLACE_EXISTING);
     }
 

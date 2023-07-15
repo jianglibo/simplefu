@@ -3,12 +3,67 @@
  */
 package me.resp.simplefu;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.io.TempDir;
+
+import picocli.CommandLine;
 
 class AppTest {
-    @Test void appHasAGreeting() {
-        App classUnderTest = new App();
-        // assertNotNull(classUnderTest.getGreeting(), "app should have a greeting");
+
+    // # the relative path is relative to the working directory.
+    // fixtures/zip-playground/a.txt -> ../notingit
+    // fixtures/zip-playground/adir/b.txt -> ../notingit
+
+    @Test
+    void appHasAGreeting(@TempDir Path tmpDir) throws IOException {
+        Assertions.assertThat(Path.of("").normalize().toAbsolutePath().getFileName().toString()).isEqualTo("app");
+
+        Path backupTo = tmpDir.resolve("backup.zip");
+
+        int exitCode = new CommandLine(new App()).execute("backup", "--backup-to",
+                backupTo.toString(),
+                "fixtures/copy-always.txt", "fixtures/copy-if-missing.txt");
+        Assertions.assertThat(exitCode).isEqualTo(0);
+        try (ZipTask zipTask = new ZipTask(backupTo)) {
+            zipTask.start(true);
+            Assertions.assertThat(zipTask.findExactly("/a.txt")).isEmpty();
+            Assertions.assertThat(zipTask.findExactly("/adir/b.txt")).isEmpty();
+            Assertions.assertThat(zipTask.findEndsWith("/a.txt")).isNotEmpty();
+            Assertions.assertThat(zipTask.findEndsWith("/b.txt")).isNotEmpty();
+        }
+
+        // Copying ..\notingit\a.txt(file) -->
+        // C:/Users/jiang/simplefu/notingit/a.txt(jar)
+        // Copying ..\notingit\b.txt(file) -->
+        // C:/Users/jiang/simplefu/notingit/b.txt(jar)
+        // Copying ..\notingit\only-if-missing.txt(file) -->
+        // C:/Users/jiang/simplefu/notingit/only-if-missing.txt(jar)
+        // Copying ..\notingit\b.txt(file) -->
+        // C:/Users/jiang/simplefu/notingit/b.txt(jar)
+        Path a = Path.of("../notingit/a.txt");
+        Path b = Path.of("../notingit/b.txt");
+        Path c = Path.of("../notingit/only-if-missing.txt");
+        Assertions.assertThat(a).exists();
+        Assertions.assertThat(b).exists();
+        Assertions.assertThat(c).exists();
+
+        Files.delete(a);
+        Files.delete(b);
+        Files.delete(c);
+        Assertions.assertThat(a).doesNotExist();
+        Assertions.assertThat(b).doesNotExist();
+        Assertions.assertThat(c).doesNotExist();
+
+        exitCode = new CommandLine(new App()).execute("restore", "--restore-from",
+                backupTo.toString(),
+                "fixtures/copy-always.txt", "fixtures/copy-if-missing.txt");
+        Assertions.assertThat(a).exists();
+        Assertions.assertThat(b).exists();
+        Assertions.assertThat(c).exists();
     }
 }
