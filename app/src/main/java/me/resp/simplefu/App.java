@@ -3,7 +3,11 @@
  */
 package me.resp.simplefu;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -12,17 +16,82 @@ import picocli.CommandLine.Option;
 @Command(name = "simplefu", mixinStandardHelpOptions = true, version = "simplefu 1.0", description = "a companion tool for resp.me deployments")
 public class App implements Callable<Integer> {
 
-    @Option(names = {"--files-from"}, description = "a file containing a list of file paths to copy and backup")
-    private String filesFrom;
+    @Command(name = "copy", description = "copy files")
+    public Integer copy(@Option(names = {
+            "--copy-always" }, description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
+
+            @Option(names = {
+                    "--copy-if-missing" }, description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
+            throws IOException {
+        if (copyAlways == null && copyIfMissing == null) {
+            System.out.println("nothing to do");
+            return 0;
+        }
+        if (copyAlways != null) {
+            InputFileParser inputFileParser = new InputFileParser(copyAlways);
+            CopyTask task = new CopyTask(inputFileParser.parse(), true);
+            task.start();
+        }
+        if (copyIfMissing != null) {
+            InputFileParser inputFileParser = new InputFileParser(copyIfMissing);
+            CopyTask task = new CopyTask(inputFileParser.parse(), false);
+            task.start();
+        }
+        return 0;
+    }
+
+    @Command(name = "backup", description = "backup files")
+    public Integer backup(@Option(names = {
+            "--backup-to" }, description = "the zip file to store the backup.") String backupTo,
+            @Option(names = {
+                    "--input-files" }, description = "the files in this list will be copied only if they do not exist in the destination") List<String> inputFiles)
+            throws IOException {
+
+        BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
+                inputFiles.stream()
+                        .map(InputFileParser::new)
+                        .flatMap(ip -> {
+                            try {
+                                return ip.parse().stream();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }).collect(Collectors.toList()),
+                Path.of(backupTo));
+        backupRestoreTask.backup();
+        return 0;
+    }
+
+    @Command(name = "backup", description = "restore files")
+    public Integer restore(@Option(names = {
+            "--backup-file" }, description = "the zip file to store the backup.") String backupFile,
+            @Option(names = {
+                    "--input-files" }, description = "all the files contains the list of files.") List<String> inputFiles)
+            throws IOException {
+
+        BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
+                inputFiles.stream()
+                        .map(InputFileParser::new)
+                        .flatMap(ip -> {
+                            try {
+                                return ip.parse().stream();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }).collect(Collectors.toList()),
+                Path.of(backupFile));
+        backupRestoreTask.restore();
+        return 0;
+    }
 
     @Override
     public Integer call() throws Exception { // your business logic goes here...
-        System.out.println(filesFrom);
+        System.out.println("Subcommand needed: 'copy', 'backup' or 'restore'");
         return 0;
     }
 
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new App()).execute("--files-from", "test.txt");
+        int exitCode = new CommandLine(new App()).execute(args);
         System.exit(exitCode);
     }
 }
