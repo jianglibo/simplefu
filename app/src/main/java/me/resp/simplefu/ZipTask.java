@@ -76,16 +76,13 @@ public class ZipTask implements Closeable {
 	}
 
 	private void cp(Path zp, Path copyTo) {
-		try {
-			if (copyTo == null) {
-				copyTo = Path.of(zp.toString());
-			} else if (Files.isDirectory(copyTo)) {
-				copyTo = copyTo.resolve(zp.getFileName().toString());
-			}
-			Util.copyFile(zp, copyTo);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		if (copyTo == null) {
+			copyTo = Path.of(zp.toString());
+		} else if (Files.isDirectory(copyTo)) {
+			copyTo = copyTo.resolve(zp.getFileName().toString());
 		}
+		Path copyToFinal = copyTo;
+		Util.exceptionHandler(() -> Util.copyFile(zp, copyToFinal), 1, "Failed to copy file: " + zp);
 	}
 
 	public void pullExactly(String pullFrom, Path copyTo) throws IOException {
@@ -111,11 +108,7 @@ public class ZipTask implements Closeable {
 		String key = String.format("%s-%s", zipFile, zipNameType);
 		if (!cache.containsKey(key)) {
 			ZipTask zipTask = new ZipTask(zipFile, zipNameType);
-			try {
-				zipTask.start(readonly);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			Util.exceptionHandler(() -> zipTask.start(readonly), 1, "Failed to open zip file: " + zipFile);
 			cache.put(key, zipTask);
 		}
 		return cache.get(key);

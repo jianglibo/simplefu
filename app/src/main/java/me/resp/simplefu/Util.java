@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 public class Util {
+    public static Integer errorTolerance = 0;
 
     public static FileSystem createZipFileSystem(Path zipFile, boolean create) throws IOException {
         // convert the filename to a URI
@@ -58,12 +59,30 @@ public class Util {
         T call() throws Throwable;
     }
 
-    public static <T> T exceptionHandler(MaybeThrowSomething<T> maybeThrowSomething, T fallback, String message) {
+    public interface MaybeThrowSomethingNoReturn {
+        void call() throws Throwable;
+    }
+
+    public static <T> T exceptionHandler(MaybeThrowSomething<T> maybeThrowSomething, T fallback, int errorLevel,
+            String message) {
         try {
             return maybeThrowSomething.call();
         } catch (Throwable e) {
             e.printStackTrace();
+            if (errorLevel >= errorTolerance)
+                throw new RuntimeException(message, e);
             return fallback;
+        }
+    }
+
+    public static void exceptionHandler(MaybeThrowSomethingNoReturn maybeThrowSomethingNoReturn, int errorLevel,
+            String message) {
+        try {
+            maybeThrowSomethingNoReturn.call();
+        } catch (Throwable e) {
+            if (errorLevel >= errorTolerance)
+                throw new RuntimeException(message, e);
+            e.printStackTrace();
         }
     }
 
@@ -80,23 +99,18 @@ public class Util {
             throw new RuntimeException("File not found: " + copyFromPath.toString());
         }
         if (Files.isDirectory(copyFromPath)) {
-            try {
-                return Files.walk(copyFromPath).map(p -> {
-                    String relativePath = copyFromPath.relativize(p).toString();
-                    if (relativePath.isBlank()) { // skip himself.
-                        return null;
-                    }
-                    return CopyItem.builder()
-                            .copyFrom(p.toString())
-                            .copyTo(copyTo + "/" + relativePath)
-                            .fromZipFile(zipFile)
-                            .fromExactly(true)
-                            .build();
-                }).filter(Objects::nonNull);
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
+            return Util.exceptionHandler(() -> Files.walk(copyFromPath).map(p -> {
+                String relativePath = copyFromPath.relativize(p).toString();
+                if (relativePath.isBlank()) { // skip himself.
+                    return null;
+                }
+                return CopyItem.builder()
+                        .copyFrom(p.toString())
+                        .copyTo(copyTo + "/" + relativePath)
+                        .fromZipFile(zipFile)
+                        .fromExactly(true)
+                        .build();
+            }).filter(Objects::nonNull), Stream.empty(), 1, "Failed to walk directory: " + copyFromPath.toString());
         } else {
             return Stream.of(CopyItem.builder()
                     .copyFrom(copyFromPath.toString())

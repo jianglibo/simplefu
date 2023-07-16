@@ -6,6 +6,7 @@ package me.resp.simplefu;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,12 @@ class AppTest {
     // # the relative path is relative to the working directory.
     // fixtures/zip-playground/a.txt -> ../notingit
     // fixtures/zip-playground/adir/b.txt -> ../notingit
+
+    @Test
+    void testErrorTolerance() {
+        App.main(new String[]{"--error-tolerance", "5"});
+        Assertions.assertThat(Util.errorTolerance).isEqualTo(5);
+    }
 
     @Test
     void appHasAGreeting(@TempDir Path tmpDir) throws IOException {

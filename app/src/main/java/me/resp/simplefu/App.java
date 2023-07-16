@@ -7,15 +7,23 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.ExecutionException;
+import picocli.CommandLine.IExecutionStrategy;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.ParseResult;
 
 @Command(name = "simplefu", mixinStandardHelpOptions = true, version = "simplefu 1.0", description = "a companion tool for resp.me deployments")
 public class App implements Callable<Integer> {
+
+    @Option(names = {
+            "--error-tolerance" }, description = "the level of tolerance before aborting the task. default: ${DEFAULT-VALUE}, means ZERO tolerance.")
+    Integer errorTolerance = 0;
 
     @Command(name = "copy", description = "copy files")
     public Integer copy(@Option(names = {
@@ -51,12 +59,8 @@ public class App implements Callable<Integer> {
                 inputFiles.stream()
                         .map(InputFileParser::new)
                         .flatMap(ip -> {
-                            try {
-                                return ip.parse();
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        })/* .collect(Collectors.toList()) */,
+                            return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
+                        }),
                 backupTo == null ? null : Path.of(backupTo));
         backupRestoreTask.backup();
         return 0;
@@ -72,12 +76,8 @@ public class App implements Callable<Integer> {
                 inputFiles.stream()
                         .map(InputFileParser::new)
                         .flatMap(ip -> {
-                            try {
-                                return ip.parse();
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        })/* .collect(Collectors.toList()) */,
+                            return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
+                        }),
                 Path.of(backupFile));
         backupRestoreTask.restore();
         return 0;
@@ -89,9 +89,15 @@ public class App implements Callable<Integer> {
         return 0;
     }
 
+    private int executionStrategy(ParseResult parseResult) {
+        Util.errorTolerance = errorTolerance;
+        return new CommandLine.RunLast().execute(parseResult); // default execution strategy
+    }
+
     public static void main(String[] args) {
         try {
-            int exitCode = new CommandLine(new App()).execute(args);
+            App app = new App();
+            int exitCode = new CommandLine(app).setExecutionStrategy(app::executionStrategy).execute(args);
             System.exit(exitCode);
         } finally {
             ZipTask.clearCache();

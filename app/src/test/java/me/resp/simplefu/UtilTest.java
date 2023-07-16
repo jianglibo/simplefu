@@ -3,6 +3,7 @@ package me.resp.simplefu;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -32,8 +33,6 @@ public class UtilTest {
 		Path p2 = Paths.get("p2").resolve(p1);
 
 		Assertions.assertThat(p2).isAbsolute();
-		// Assertions.assertEquals(p1, ZipUtil.calPath(p2, "p1",
-		// UnzipPathType.RELATIVELIZE));
 
 	}
 
@@ -41,6 +40,16 @@ public class UtilTest {
 	void testExceptionHandler() {
 		Util.exceptionHandler(() -> {
 			return "yes";
-		}, "", "will throw exception");
+		}, "", 1, "will throw exception");
+
+		Stream<CopyItem> items = Stream.of(CopyItem.builder().copyFrom("a").copyTo("b").build(),
+				CopyItem.builder().copyFrom("c").copyTo("d").build());
+		Stream<CopyItem> sc = Util.exceptionHandler(() -> {
+			return items;
+		}, Stream.empty(), 1, "will throw exception");
+
+		Util.exceptionHandler(() -> {
+		}, 1, "will throw exception");
+
 	}
 }

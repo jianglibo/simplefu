@@ -22,12 +22,7 @@ public class CopyTask {
 
 	public void start() throws IOException {
 		this.items.forEach(item -> {
-			try {
-				copyOne(item);
-			} catch (IOException e) {
-				System.out.println("copyOne error: " + item);
-				throw new RuntimeException(e);
-			}
+			Util.exceptionHandler(() -> copyOne(item), 1, "copyOne");
 		});
 	}
 
