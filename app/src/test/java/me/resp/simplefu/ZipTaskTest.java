@@ -7,9 +7,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 public class ZipTaskTest {
 
 	@Test
@@ -17,10 +14,9 @@ public class ZipTaskTest {
 		System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
 
 		Path azip = tmpDir.resolve("a.zip");
-		Path afile = ZipUtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
+		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
 
-		ZipTask zipTask = new ZipTask(azip, ZipNameType.ABSOLUTE);
-		zipTask.start(false);
+		ZipTask zipTask = ZipTask.get(azip, ZipNameType.ABSOLUTE, false);
 		zipTask.push(afile, null);
 		Assertions.assertThat(zipTask.findExactly(afile.toString())).isPresent();
 		zipTask.close();
@@ -30,9 +26,8 @@ public class ZipTaskTest {
 	void testAddFileFlatten(@TempDir Path tmpDir) throws IOException {
 		System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
 		Path azip = tmpDir.resolve("a.zip");
-		Path bfile = ZipUtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
-		ZipTask zipTask = new ZipTask(azip, ZipNameType.FLATTEN);
-		zipTask.start(false);
+		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
+		ZipTask zipTask = ZipTask.get(azip, ZipNameType.FLATTEN, false);
 		zipTask.push(bfile, null);
 		String zentryName = bfile.getFileName().toString();
 		Assertions.assertThat(zipTask.findExactly(zentryName))

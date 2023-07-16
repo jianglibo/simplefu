@@ -29,13 +29,13 @@ class AppTest {
                 backupTo.toString(),
                 "fixtures/copy-always.txt", "fixtures/copy-if-missing.txt");
         Assertions.assertThat(exitCode).isEqualTo(0);
-        try (ZipTask zipTask = new ZipTask(backupTo)) {
-            zipTask.start(true);
+        // try (ZipTask zipTask = new ZipTask(backupTo)) {
+            ZipTask zipTask = ZipTask.get(backupTo, ZipNameType.ABSOLUTE, true);
             Assertions.assertThat(zipTask.findExactly("/a.txt")).isEmpty();
             Assertions.assertThat(zipTask.findExactly("/adir/b.txt")).isEmpty();
             Assertions.assertThat(zipTask.findEndsWith("/a.txt")).isNotEmpty();
             Assertions.assertThat(zipTask.findEndsWith("/b.txt")).isNotEmpty();
-        }
+        // }
 
         // Copying ..\notingit\a.txt(file) -->
         // C:/Users/jiang/simplefu/notingit/a.txt(jar)

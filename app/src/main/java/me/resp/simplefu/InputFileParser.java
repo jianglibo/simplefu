@@ -22,14 +22,13 @@ public class InputFileParser {
 		this.inputFilePath = inputFilePath;
 	}
 
-	public List<CopyItem> parse() throws IOException {
-		try (Stream<String> stream = Files.lines(inputFilePath)) {
-			return parse(stream);
-		}
+	public Stream<CopyItem> parse() throws IOException {
+		List<String> lines = Files.readAllLines(inputFilePath);
+		return parse(lines);
 	}
 
-	protected List<CopyItem> parse(Stream<String> stream) {
-		return stream
+	protected Stream<CopyItem> parse(List<String> lines) {
+		return lines.stream()
 				.map(line -> {
 					Matcher matcher = ptn.matcher(line);
 					if (matcher.matches()) {
@@ -41,7 +40,7 @@ public class InputFileParser {
 				.map(line -> line.trim())
 				.filter(line -> !line.startsWith("#"))
 				.filter(line -> !line.isBlank())
-				.map(line -> {
+				.flatMap(line -> {
 					String[] parts = line.split("->");
 					if (parts.length != 2) {
 						return null;
@@ -71,19 +70,16 @@ public class InputFileParser {
 						}
 					}
 					if (inZip) {
-						return CopyItem.builder()
-								.copyFrom(entryName)
-								.copyTo(copyTo)
-								.fromZipFile(zipFile)
-								.fromExactly(exactly)
-								.build();
+						if (!Files.exists(zipFile) || Files.isDirectory(zipFile)) {
+							throw new RuntimeException("Zip file not found: " + zipFile);
+						}
+						ZipTask zipTask = ZipTask.get(zipFile, ZipNameType.ABSOLUTE, true);
+						return Util.walkCopyFrom(zipTask.getZipFileSystem().getPath(entryName), copyTo, zipFile,
+								exactly);
 					} else {
-						return CopyItem.builder()
-								.copyFrom(copyFrom)
-								.copyTo(copyTo)
-								.build();
+						return Util.walkCopyFrom(Path.of(copyFrom), copyTo, null, true);
 					}
-				}).filter(Objects::nonNull).collect(java.util.stream.Collectors.toList());
+				}).filter(Objects::nonNull);
 	}
 
 }

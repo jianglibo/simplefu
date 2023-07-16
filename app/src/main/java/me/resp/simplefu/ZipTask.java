@@ -6,7 +6,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -18,6 +19,7 @@ public class ZipTask implements Closeable {
 	@Getter
 	private final Path zipfile;
 
+	@Getter
 	private FileSystem zipFileSystem;
 
 	public ZipTask(Path zipfile) {
@@ -30,9 +32,8 @@ public class ZipTask implements Closeable {
 		this.zipfile = zipfile;
 	}
 
-	public ZipTask start(boolean readonly) throws IOException {
-		this.zipFileSystem = ZipUtil.createZipFileSystem(zipfile, !readonly);
-		return this;
+	private void start(boolean readonly) throws IOException {
+		this.zipFileSystem = Util.createZipFileSystem(zipfile, !readonly);
 	}
 
 	private Path getZipPath(Path copyFrom, String copyTo) {
@@ -56,7 +57,7 @@ public class ZipTask implements Closeable {
 		if (parent != null && !Files.exists(parent)) {
 			Files.createDirectories(parent);
 		}
-		ZipUtil.copyFile(copyFrom, to);
+		Util.copyFile(copyFrom, to);
 	}
 
 	public void push(Path copyFrom) throws IOException {
@@ -81,7 +82,7 @@ public class ZipTask implements Closeable {
 			} else if (Files.isDirectory(copyTo)) {
 				copyTo = copyTo.resolve(zp.getFileName().toString());
 			}
-			ZipUtil.copyFile(zp, copyTo);
+			Util.copyFile(zp, copyTo);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -102,6 +103,33 @@ public class ZipTask implements Closeable {
 	@Override
 	public void close() throws IOException {
 		zipFileSystem.close();
+	}
+
+	private static Map<String, ZipTask> cache = new HashMap<>();
+
+	public static synchronized ZipTask get(Path zipFile, ZipNameType zipNameType, boolean readonly) {
+		String key = String.format("%s-%s", zipFile, zipNameType);
+		if (!cache.containsKey(key)) {
+			ZipTask zipTask = new ZipTask(zipFile, zipNameType);
+			try {
+				zipTask.start(readonly);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			cache.put(key, zipTask);
+		}
+		return cache.get(key);
+	}
+
+	public static synchronized void clearCache() {
+		for (ZipTask task : cache.values()) {
+			try {
+				task.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		cache.clear();
 	}
 
 }

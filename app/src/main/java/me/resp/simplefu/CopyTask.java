@@ -3,15 +3,14 @@ package me.resp.simplefu;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
+import java.util.stream.Stream;
 
 public class CopyTask {
 
-	private List<CopyItem> items;
+	private Stream<CopyItem> items;
 	private boolean copyAlways;
 
-	public CopyTask(List<CopyItem> items, boolean copyAlways) {
+	public CopyTask(Stream<CopyItem> items, boolean copyAlways) {
 		this.items = items;
 		this.copyAlways = copyAlways;
 	}
@@ -22,9 +21,14 @@ public class CopyTask {
 	}
 
 	public void start() throws IOException {
-		for (CopyItem item : items) {
-			copyOne(item);
-		}
+		this.items.forEach(item -> {
+			try {
+				copyOne(item);
+			} catch (IOException e) {
+				System.out.println("copyOne error: " + item);
+				throw new RuntimeException(e);
+			}
+		});
 	}
 
 	/**
@@ -44,24 +48,18 @@ public class CopyTask {
 		}
 		if (item.getFromZipFile() != null) {
 			if (item.isFromExactly()) {
-				try (ZipTask zipTask = new ZipTask(item.getFromZipFile());) {
-					zipTask.start(true);
-					zipTask.pullExactly(item.getCopyFrom(), Path.of(item.getCopyTo()));
-					zipTask.close();
-				}
+				ZipTask zipTask = ZipTask.get(item.getFromZipFile(), ZipNameType.ABSOLUTE, true);
+				zipTask.pullExactly(item.getCopyFrom(), Path.of(item.getCopyTo()));
 			} else {
-				try (ZipTask zipTask = new ZipTask(item.getFromZipFile());) {
-					zipTask.start(true);
-					zipTask.pullEndsWith(item.getCopyFrom(), Path.of(item.getCopyTo()));
-					zipTask.close();
-				}
+				ZipTask zipTask = ZipTask.get(item.getFromZipFile(), ZipNameType.ABSOLUTE, true);
+				zipTask.pullEndsWith(item.getCopyFrom(), Path.of(item.getCopyTo()));
 			}
 		} else {
 			Path to = Path.of(item.getCopyTo());
 			if (Files.isDirectory(to)) {
 				to = to.resolve(Path.of(item.getCopyFrom()).getFileName());
 			}
-			ZipUtil.copyFile(Path.of(item.getCopyFrom()), to);
+			Util.copyFile(Path.of(item.getCopyFrom()), to);
 		}
 	}
 }

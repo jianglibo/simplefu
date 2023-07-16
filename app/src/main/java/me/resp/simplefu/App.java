@@ -52,11 +52,11 @@ public class App implements Callable<Integer> {
                         .map(InputFileParser::new)
                         .flatMap(ip -> {
                             try {
-                                return ip.parse().stream();
+                                return ip.parse();
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
-                        }).collect(Collectors.toList()),
+                        })/* .collect(Collectors.toList()) */,
                 backupTo == null ? null : Path.of(backupTo));
         backupRestoreTask.backup();
         return 0;
@@ -73,11 +73,11 @@ public class App implements Callable<Integer> {
                         .map(InputFileParser::new)
                         .flatMap(ip -> {
                             try {
-                                return ip.parse().stream();
+                                return ip.parse();
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
-                        }).collect(Collectors.toList()),
+                        })/* .collect(Collectors.toList()) */,
                 Path.of(backupFile));
         backupRestoreTask.restore();
         return 0;
@@ -90,7 +90,11 @@ public class App implements Callable<Integer> {
     }
 
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new App()).execute(args);
-        System.exit(exitCode);
+        try {
+            int exitCode = new CommandLine(new App()).execute(args);
+            System.exit(exitCode);
+        } finally {
+            ZipTask.clearCache();
+        }
     }
 }
