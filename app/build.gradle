@@ -21,6 +21,11 @@ test {
     systemProperty 'org.slf4j.simpleLogger.defaultLogLevel', 'debug'
 }
 
+shadowJar {
+   archiveBaseName.set('simplefu')
+   archiveClassifier.set('')
+   archiveVersion.set('')
+}
 
 sourceSets {
     test {
