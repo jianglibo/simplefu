@@ -3,6 +3,8 @@ simple file util for resp.me deployments.
 
 Designed with a focus on reliability and convenience, rather than performance or scalability, this solution is particularly suitable for automation tasks involving file movement, copying, or backup operations.
 
+![alt text](./assets/simplefu.png "Simplefu")
+
 ## Usage
 file list file copy-always.txt, files in this list will always be copied to the destination even if the file already exists.
 
