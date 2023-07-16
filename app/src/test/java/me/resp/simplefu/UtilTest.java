@@ -37,7 +37,7 @@ public class UtilTest {
 	}
 
 	@Test
-	void testExceptionHandler() {
+	void testExceptionHandlerGeneric() {
 		Util.exceptionHandler(() -> {
 			return "yes";
 		}, "", 1, "will throw exception");
@@ -51,5 +51,21 @@ public class UtilTest {
 		Util.exceptionHandler(() -> {
 		}, 1, "will throw exception");
 
+	}
+
+	@Test
+	void testExceptionHandlerCatch() {
+		Assertions.assertThatThrownBy(() -> {
+			Util.exceptionHandler(() -> {
+				throw new RuntimeException("test");
+			}, "", 1, "will throw exception");
+		}).hasMessageContaining("will throw exception");
+	}
+
+	@Test
+	void tCopyException() {
+		Assertions.assertThatThrownBy(() -> {
+			Files.copy(Path.of("I don't exist"), Path.of(""));
+		}).hasMessageContaining("I don't exist");
 	}
 }

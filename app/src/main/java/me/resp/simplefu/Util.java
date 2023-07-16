@@ -68,9 +68,11 @@ public class Util {
         try {
             return maybeThrowSomething.call();
         } catch (Throwable e) {
-            e.printStackTrace();
-            if (errorLevel >= errorTolerance)
+            if (errorLevel > errorTolerance) {
                 throw new RuntimeException(message, e);
+            } else {
+                System.out.println("ignored the error: " + e.getMessage());
+            }
             return fallback;
         }
     }
@@ -80,9 +82,11 @@ public class Util {
         try {
             maybeThrowSomethingNoReturn.call();
         } catch (Throwable e) {
-            if (errorLevel >= errorTolerance)
+            if (errorLevel > errorTolerance) {
                 throw new RuntimeException(message, e);
-            e.printStackTrace();
+            } else {
+                System.out.println("ignored the error: " + e.getMessage());
+            }
         }
     }
 
