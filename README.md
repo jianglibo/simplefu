@@ -8,6 +8,10 @@ Designed with a focus on reliability and convenience, rather than performance or
 ## Usage
 file list file copy-always.txt, files in this list will always be copied to the destination even if the file already exists.
 
+```bash
+./gradle shadowJar
+```
+
 ```text
 /some/path/tofile/a.txt -> /another/path/
 /some/path/tozipfile/a.zip!x/y/z.txt -> /another/path/
