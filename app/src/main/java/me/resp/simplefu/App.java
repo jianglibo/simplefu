@@ -6,21 +6,22 @@ package me.resp.simplefu;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.ExecutionException;
-import picocli.CommandLine.IExecutionStrategy;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParseResult;
 
 @Command(name = "simplefu", mixinStandardHelpOptions = true, version = "simplefu 1.0", description = "a companion tool for resp.me deployments")
 public class App implements Callable<Integer> {
+
+    protected static final String COPY_ALWAYS_FILENAME = "copy-always.txt";
+    protected static final String COPY_IF_MISSING_FILENAME = "copy-if-missing.txt";
 
     @Option(names = {
             "--error-tolerance" }, description = "the level of tolerance before aborting the task. default: ${DEFAULT-VALUE}, means ZERO tolerance.")
@@ -28,10 +29,10 @@ public class App implements Callable<Integer> {
 
     @Command(name = "copy", description = "copy files")
     public Integer copy(@Option(names = {
-            "--copy-always" }, defaultValue = "copy-always.txt", description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
+            "--copy-always" }, defaultValue = COPY_ALWAYS_FILENAME, description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
 
             @Option(names = {
-                    "--copy-if-missing" }, defaultValue = "copy-if-missing.txt", description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
+                    "--copy-if-missing" }, defaultValue = COPY_IF_MISSING_FILENAME, description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
             throws IOException {
         boolean copyAlwaysExists = Files.exists(Path.of(copyAlways));
         boolean copyIfMissingExists = Files.exists(Path.of(copyIfMissing));
@@ -56,8 +57,22 @@ public class App implements Callable<Integer> {
     @Command(name = "backup", description = "backup files")
     public Integer backup(@Option(names = {
             "--backup-to" }, description = "the zip file to store the backup.") String backupTo,
-            @Parameters(index = "0", arity = "1..*", description = "files which list the files to process.") List<String> inputFiles)
+            @Parameters(index = "0", arity = "0..*", description = "files which list the files to process.") List<String> inputFiles)
             throws IOException {
+        inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
+        if (inputFiles.isEmpty()) {
+            if (Files.exists(Path.of(COPY_ALWAYS_FILENAME))) {
+                inputFiles.add(COPY_ALWAYS_FILENAME);
+            }
+            if (Files.exists(Path.of(COPY_IF_MISSING_FILENAME))) {
+                inputFiles.add(COPY_IF_MISSING_FILENAME);
+            }
+        }
+
+        if (inputFiles.isEmpty()) {
+            System.out.println("input files don't exist, nothing to do");
+            return 0;
+        }
 
         BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
                 inputFiles.stream()
@@ -72,10 +87,24 @@ public class App implements Callable<Integer> {
 
     @Command(name = "restore", description = "restore files")
     public Integer restore(@Option(names = {
-            "--restore-from" }, description = "the zip file to store the backup.") String backupFile,
-            @Parameters(index = "0", arity = "1..*", description = "files list the files to process.") List<String> inputFiles)
+            "--restore-from" }, description = "the zip file to restore from.") String backupFile,
+            @Parameters(index = "0", arity = "0..*", description = "files list the files to process.") List<String> inputFiles)
             throws IOException {
 
+        inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
+        if (inputFiles.isEmpty()) {
+            if (Files.exists(Path.of(COPY_ALWAYS_FILENAME))) {
+                inputFiles.add(COPY_ALWAYS_FILENAME);
+            }
+            if (Files.exists(Path.of(COPY_IF_MISSING_FILENAME))) {
+                inputFiles.add(COPY_IF_MISSING_FILENAME);
+            }
+        }
+
+        if (inputFiles.isEmpty()) {
+            System.out.println("input files don't exist, nothing to do");
+            return 0;
+        }
         BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
                 inputFiles.stream()
                         .map(InputFileParser::new)

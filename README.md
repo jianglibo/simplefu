@@ -39,5 +39,5 @@ java -jar simplefu.jar backup --backup-to some.zip file-list-file1, file-list-fi
 restore files at the destination
 
 ```bash
-java -jar simplefu.jar backup --restore-from some.zip file-list-file1, file-list-file2 ...
+java -jar simplefu.jar restore --restore-from some.zip file-list-file1, file-list-file2 ...
 ```

@@ -22,26 +22,40 @@ class AppTest {
 
     @Test
     void testErrorTolerance() {
-        App.main(new String[]{"--error-tolerance", "5"});
+        App.main(new String[] { "--error-tolerance", "5" });
         Assertions.assertThat(Util.errorTolerance).isEqualTo(5);
     }
 
     @Test
-    void appHasAGreeting(@TempDir Path tmpDir) throws IOException {
-        Assertions.assertThat(Path.of("").normalize().toAbsolutePath().getFileName().toString()).isEqualTo("app");
+    void backupAndRestore(@TempDir Path tmpDir) throws IOException {
+        Path pwd = Path.of("").normalize().toAbsolutePath();
+        Assertions.assertThat(pwd.getFileName().toString()).isEqualTo("app");
 
         Path backupTo = tmpDir.resolve("backup.zip");
 
+        if (!Files.exists(pwd.resolve(App.COPY_ALWAYS_FILENAME))) {
+            Files.copy(pwd.resolve("fixtures/copy-always.txt"),
+                    pwd.resolve(App.COPY_ALWAYS_FILENAME));
+        }
+
         int exitCode = new CommandLine(new App()).execute("backup", "--backup-to",
+                backupTo.toString());
+
+        Assertions.assertThat(exitCode).isEqualTo(0);
+        if (Files.exists(pwd.resolve(App.COPY_ALWAYS_FILENAME))) {
+            Files.delete(pwd.resolve(App.COPY_ALWAYS_FILENAME));
+        }
+
+        exitCode = new CommandLine(new App()).execute("backup", "--backup-to",
                 backupTo.toString(),
                 "fixtures/copy-always.txt", "fixtures/copy-if-missing.txt");
         Assertions.assertThat(exitCode).isEqualTo(0);
         // try (ZipTask zipTask = new ZipTask(backupTo)) {
-            ZipTask zipTask = ZipTask.get(backupTo, ZipNameType.ABSOLUTE, true);
-            Assertions.assertThat(zipTask.findExactly("/a.txt")).isEmpty();
-            Assertions.assertThat(zipTask.findExactly("/adir/b.txt")).isEmpty();
-            Assertions.assertThat(zipTask.findEndsWith("/a.txt")).isNotEmpty();
-            Assertions.assertThat(zipTask.findEndsWith("/b.txt")).isNotEmpty();
+        ZipTask zipTask = ZipTask.get(backupTo, ZipNameType.ABSOLUTE, true);
+        Assertions.assertThat(zipTask.findExactly("/a.txt")).isEmpty();
+        Assertions.assertThat(zipTask.findExactly("/adir/b.txt")).isEmpty();
+        Assertions.assertThat(zipTask.findEndsWith("/a.txt")).isNotEmpty();
+        Assertions.assertThat(zipTask.findEndsWith("/b.txt")).isNotEmpty();
         // }
 
         // Copying ..\notingit\a.txt(file) -->
