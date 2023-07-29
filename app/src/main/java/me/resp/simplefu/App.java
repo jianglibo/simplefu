@@ -4,6 +4,7 @@
 package me.resp.simplefu;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -27,21 +28,24 @@ public class App implements Callable<Integer> {
 
     @Command(name = "copy", description = "copy files")
     public Integer copy(@Option(names = {
-            "--copy-always" }, description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
+            "--copy-always" }, defaultValue = "copy-always.txt", description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
 
             @Option(names = {
-                    "--copy-if-missing" }, description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
+                    "--copy-if-missing" }, defaultValue = "copy-if-missing.txt", description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
             throws IOException {
-        if (copyAlways == null && copyIfMissing == null) {
-            System.out.println("nothing to do");
+        boolean copyAlwaysExists = Files.exists(Path.of(copyAlways));
+        boolean copyIfMissingExists = Files.exists(Path.of(copyIfMissing));
+        if (!copyAlwaysExists && !copyIfMissingExists) {
+            System.out.println("input files don't exist, nothing to do");
             return 0;
         }
-        if (copyAlways != null) {
+
+        if (copyAlwaysExists) {
             InputFileParser inputFileParser = new InputFileParser(copyAlways);
             CopyTask task = new CopyTask(inputFileParser.parse(), true);
             task.start();
         }
-        if (copyIfMissing != null) {
+        if (copyIfMissingExists) {
             InputFileParser inputFileParser = new InputFileParser(copyIfMissing);
             CopyTask task = new CopyTask(inputFileParser.parse(), false);
             task.start();
@@ -93,8 +97,6 @@ public class App implements Callable<Integer> {
         Util.errorTolerance = errorTolerance;
         return new CommandLine.RunLast().execute(parseResult); // default execution strategy
     }
-
-
 
     public static void main(String[] args) {
         try {
