@@ -17,6 +17,11 @@ public class BackupRestoreTaskTest {
 	@Test
 	void testBackup(@TempDir Path tmpDir) throws IOException {
 
+		// when do backup task, the source file does need to exist.
+		// what we backup is from the destination files.
+
+		Util.ignoreMissingSource = true;
+
 		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
 		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
 

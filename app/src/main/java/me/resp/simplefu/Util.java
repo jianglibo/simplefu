@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 public class Util {
     public static Integer errorTolerance = 0;
+    public static boolean ignoreMissingSource = false;
 
     public static FileSystem createZipFileSystem(Path zipFile, boolean create) throws IOException {
         // convert the filename to a URI
@@ -99,7 +100,7 @@ public class Util {
      * @throws IOException
      */
     public static Stream<CopyItem> walkCopyFrom(Path copyFromPath, String copyTo, Path zipFile, boolean exactly) {
-        if (!Files.exists(copyFromPath)) {
+        if (!Files.exists(copyFromPath) && !ignoreMissingSource) {
             throw new RuntimeException("File not found: " + copyFromPath.toString());
         }
         if (Files.isDirectory(copyFromPath)) {

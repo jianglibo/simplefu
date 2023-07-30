@@ -40,7 +40,7 @@ public class ZipTask implements Closeable {
 		if (copyTo == null) {
 			switch (zipNameType) {
 				case ABSOLUTE:
-					return zipFileSystem.getPath(copyFrom.toAbsolutePath().normalize().toString());
+					return zipFileSystem.getPath( copyFrom.toAbsolutePath().normalize().toString());
 				case FLATTEN:
 					return zipFileSystem.getPath(copyFrom.getFileName().toString());
 				default:

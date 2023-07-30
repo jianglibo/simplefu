@@ -27,6 +27,9 @@ public class App implements Callable<Integer> {
             "--error-tolerance" }, description = "the level of tolerance before aborting the task. default: ${DEFAULT-VALUE}, means ZERO tolerance.")
     Integer errorTolerance = 0;
 
+    @Option(names = "--ignore-missing-source", description = "create a new archive")
+    boolean ignoreMissingSource;
+
     @Command(name = "copy", description = "copy files")
     public Integer copy(@Option(names = {
             "--copy-always" }, defaultValue = COPY_ALWAYS_FILENAME, description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
@@ -59,6 +62,7 @@ public class App implements Callable<Integer> {
             "--backup-to" }, description = "the zip file to store the backup.") String backupTo,
             @Parameters(index = "0", arity = "0..*", description = "files which list the files to process.") List<String> inputFiles)
             throws IOException {
+        Util.ignoreMissingSource = true;
         inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
         if (inputFiles.isEmpty()) {
             if (Files.exists(Path.of(COPY_ALWAYS_FILENAME))) {
@@ -90,7 +94,7 @@ public class App implements Callable<Integer> {
             "--restore-from" }, description = "the zip file to restore from.") String backupFile,
             @Parameters(index = "0", arity = "0..*", description = "files list the files to process.") List<String> inputFiles)
             throws IOException {
-
+        Util.ignoreMissingSource = true;
         inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
         if (inputFiles.isEmpty()) {
             if (Files.exists(Path.of(COPY_ALWAYS_FILENAME))) {
@@ -124,6 +128,7 @@ public class App implements Callable<Integer> {
 
     private int executionStrategy(ParseResult parseResult) {
         Util.errorTolerance = errorTolerance;
+        Util.ignoreMissingSource = ignoreMissingSource;
         return new CommandLine.RunLast().execute(parseResult); // default execution strategy
     }
 

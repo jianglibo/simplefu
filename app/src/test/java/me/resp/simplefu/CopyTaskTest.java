@@ -63,7 +63,8 @@ public class CopyTaskTest {
 		// directory.
 		String dstFilename = dst.toString() + "/bbb";
 		// we point the copyFrom to a directory in a zip file.
-		Stream<CopyItem> copyItems = new InputFileParser("").parse(List.of(zipFileName + "!a -> " + dstFilename));
+		Stream<CopyItem> copyItems = new InputFileParser("")
+				.parse(List.of(zipFileName + "!a -> " + dstFilename));
 		CopyTask copyTask = new CopyTask(copyItems, true);
 		copyTask.start();
 		Assertions.assertThat(dst.resolve("bbb/a.txt")).exists();

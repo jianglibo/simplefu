@@ -9,6 +9,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+/**
+ * the parser is for copying, backuping and restoring, the source and destination sometimes swithed.
+ */
 public class InputFileParser {
 	private static final Pattern ptn = Pattern.compile("\\s*([^#]*)#.*");
 
@@ -70,12 +73,17 @@ public class InputFileParser {
 						}
 					}
 					if (inZip) {
-						if (!Files.exists(zipFile) || Files.isDirectory(zipFile)) {
+						boolean zipExists = Files.exists(zipFile) && Files.isReadable(zipFile);
+						if (!zipExists && !Util.ignoreMissingSource) {
 							throw new RuntimeException("Zip file not found: " + zipFile);
 						}
-						ZipTask zipTask = ZipTask.get(zipFile, ZipNameType.ABSOLUTE, true);
-						return Util.walkCopyFrom(zipTask.getZipFileSystem().getPath(entryName), copyTo, zipFile,
-								exactly);
+						if (zipExists) {
+							ZipTask zipTask = ZipTask.get(zipFile, ZipNameType.ABSOLUTE, true);
+							return Util.walkCopyFrom(zipTask.getZipFileSystem().getPath(entryName), copyTo, zipFile,
+									exactly);
+						} else {
+							return null;
+						}
 					} else {
 						return Util.walkCopyFrom(Path.of(copyFrom), copyTo, null, true);
 					}
