@@ -13,6 +13,25 @@ import org.junit.jupiter.api.io.TempDir;
 public class CopyTaskTest {
 
 	@Test
+	void testFlatCopyMissingSource(@TempDir Path tmpDir) throws IOException {
+		Path dst = tmpDir.resolve("dst");
+		Files.createDirectory(dst);
+
+		String dstFilename = dst.toString();
+		Path inpuPath = UtilTest.createAfile(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
+				"b/b.txt -> " + dstFilename));
+		Stream<CopyItem> copyItems = InputFileParser.copyParser(inpuPath.toString()).parse();
+		CopyTask copyTask = new CopyTask(copyItems, true);
+		Assertions.assertThatThrownBy(() -> copyTask.start())
+				.hasMessageContaining("b.txt");
+
+		Util.setIgnoreMissingSource(true);
+		copyItems = InputFileParser.copyParser(inpuPath.toString()).parse();
+		CopyTask copyTask1 = new CopyTask(copyItems, true);
+		copyTask1.start();
+	}
+
+	@Test
 	void testFlatCopy(@TempDir Path tmpDir) throws IOException {
 		// create a zip file for test.
 		Path azip = tmpDir.resolve("a.zip");

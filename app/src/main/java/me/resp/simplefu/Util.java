@@ -57,6 +57,14 @@ public class Util {
         if (Files.isDirectory(copyFrom)) {
             throw new IOException(printCopyFromAndTo(copyFrom, copyTo, "source file is a directory."));
         }
+        if (!Files.exists(copyFrom)) {
+            if (ignoreMissingSource) {
+                System.out.println("source file does not exist, ignored.");
+                return null;
+            } else {
+                throw new IOException(printCopyFromAndTo(copyFrom, copyTo, "source file does not exist."));
+            }
+        }
         printCopyFromAndTo(copyFrom, copyTo);
         if (copyTo.getParent() != null && !Files.exists(copyTo.getParent())) {
             Files.createDirectories(copyTo.getParent());
