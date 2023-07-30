@@ -2,7 +2,6 @@ package me.resp.simplefu;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,8 +10,8 @@ public class InputFileParserTest {
 
 	@Test
 	void testParse() {
-		InputFileParser parser = new InputFileParser("");
-		Util.ignoreMissingSource = true;
+		InputFileParser parser = InputFileParser.copyParser("");
+		Util.setIgnoreMissingSource(true);
 		List<CopyItem> items = parser.parse(List.of(
 				"!a.txt -> !b.txt",
 				" ",

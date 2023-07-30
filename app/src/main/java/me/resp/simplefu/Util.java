@@ -12,9 +12,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import lombok.Getter;
+
 public class Util {
     public static Integer errorTolerance = 0;
-    public static boolean ignoreMissingSource = false;
+
+    @Getter
+    private static boolean ignoreMissingSource = false;
+
+    public static void setIgnoreMissingSource(boolean ignoreMissingSource) {
+        Util.ignoreMissingSource = ignoreMissingSource;
+    }
 
     public static FileSystem createZipFileSystem(Path zipFile, boolean create) throws IOException {
         // convert the filename to a URI
@@ -99,7 +107,8 @@ public class Util {
      * @return
      * @throws IOException
      */
-    public static Stream<CopyItem> walkCopyFrom(Path copyFromPath, String copyTo, Path zipFile, boolean exactly) {
+    public static Stream<CopyItem> walkCopyFrom(Path copyFromPath, String copyTo, Path zipFileIfFromZip,
+            boolean exactly) {
         if (!Files.exists(copyFromPath) && !ignoreMissingSource) {
             throw new RuntimeException("File not found: " + copyFromPath.toString());
         }
@@ -112,7 +121,7 @@ public class Util {
                 return CopyItem.builder()
                         .copyFrom(p.toString())
                         .copyTo(copyTo + "/" + relativePath)
-                        .fromZipFile(zipFile)
+                        .fromZipFile(zipFileIfFromZip)
                         .fromExactly(true)
                         .build();
             }).filter(Objects::nonNull), Stream.empty(), 1, "Failed to walk directory: " + copyFromPath.toString());
@@ -120,10 +129,36 @@ public class Util {
             return Stream.of(CopyItem.builder()
                     .copyFrom(copyFromPath.toString())
                     .copyTo(copyTo)
-                    .fromZipFile(zipFile)
+                    .fromZipFile(zipFileIfFromZip)
                     .fromExactly(exactly)
                     .build());
         }
     }
 
+    public static Stream<CopyItem> walkBackupItem(Path toBackup) {
+        if (!Files.exists(toBackup) && !ignoreMissingSource) {
+            throw new RuntimeException("File not found: " + toBackup.toString());
+        }
+        if (Files.isDirectory(toBackup)) {
+            return Util.exceptionHandler(() -> Files.walk(toBackup).map(p -> {
+                String relativePath = toBackup.relativize(p).toString();
+                if (relativePath.isBlank()) { // skip himself.
+                    return null;
+                }
+                return CopyItem.builder()
+                        .copyFrom("doesn't matter.")
+                        .copyTo(p.toAbsolutePath().normalize().toString())
+                        .fromZipFile(null)
+                        .fromExactly(true)
+                        .build();
+            }).filter(Objects::nonNull), Stream.empty(), 1, "Failed to walk directory: " + toBackup.toString());
+        } else {
+            return Stream.of(CopyItem.builder()
+                    .copyFrom("doesn't matter.")
+                    .copyTo(toBackup.toAbsolutePath().normalize().toString())
+                    .fromZipFile(null)
+                    .fromExactly(true)
+                    .build());
+        }
+    }
 }

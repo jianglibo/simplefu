@@ -20,7 +20,7 @@ public class BackupRestoreTaskTest {
 		// when do backup task, the source file does need to exist.
 		// what we backup is from the destination files.
 
-		Util.ignoreMissingSource = true;
+		// Util.ignoreMissingSource = true;
 
 		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
 		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
@@ -74,7 +74,7 @@ public class BackupRestoreTaskTest {
 
 		// We should copy the files to the dst first or else the backup will skip the
 		// missing items.
-		BackupRestoreTask backupRestoreTask = new BackupRestoreTask(new InputFileParser("")
+		BackupRestoreTask backupRestoreTask = new BackupRestoreTask(InputFileParser.backupRestoreParser("")
 				.parse(List.of(azip.toString() + "!a -> " + dst)), null);
 		Path backuped = backupRestoreTask.backup();
 
@@ -94,7 +94,7 @@ public class BackupRestoreTaskTest {
 		Files.copy(bfile, dst.resolve("b.txt"));
 		ZipTask.clearCache();
 
-		backupRestoreTask = new BackupRestoreTask(new InputFileParser("")
+		backupRestoreTask = new BackupRestoreTask(InputFileParser.backupRestoreParser("")
 				.parse(List.of(azip.toString() + "!a -> " + dst)), null);
 		backuped = backupRestoreTask.backup();
 
@@ -118,7 +118,7 @@ public class BackupRestoreTaskTest {
 		});
 
 		BackupRestoreTask restoreTask = new BackupRestoreTask(
-				new InputFileParser("")
+				InputFileParser.backupRestoreParser("")
 						.parse(List.of(azip.toString() + "!a -> " + dst)),
 				backuped);
 		long count = restoreTask.restore();

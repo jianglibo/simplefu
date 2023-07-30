@@ -10,20 +10,53 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * the parser is for copying, backuping and restoring, the source and destination sometimes swithed.
+ * when copying the source file maybe from a zip file, when backuping the file
+ * to backup will not come back to the origin zip file,
+ * so the copyFrom property of the Copyitem is unrelated.
  */
 public class InputFileParser {
 	private static final Pattern ptn = Pattern.compile("\\s*([^#]*)#.*");
 
 	private Path inputFilePath;
 
-	public InputFileParser(String inputFilePath) {
-		this.inputFilePath = Path.of(inputFilePath);
+	private boolean copying;
+
+	private InputFileParser() {
 	}
 
-	public InputFileParser(Path inputFilePath) {
-		this.inputFilePath = inputFilePath;
+	public static InputFileParser copyParser(String inputFilePath) {
+		InputFileParser inputFileParser = new InputFileParser();
+		inputFileParser.copying = true;
+		inputFileParser.inputFilePath = Path.of(inputFilePath);
+		return inputFileParser;
 	}
+
+	public static InputFileParser backupRestoreParser(String inputFilePath) {
+		InputFileParser inputFileParser = new InputFileParser();
+		inputFileParser.copying = false;
+		inputFileParser.inputFilePath = Path.of(inputFilePath);
+		return inputFileParser;
+	}
+ 
+	//  public InputFileParser(String inputFilePath) {
+	// this.inputFilePath = Path.of(inputFilePath);
+	// this.copying = false;
+	// }
+
+	// public InputFileParser(String inputFilePath, boolean copying) {
+	// this.inputFilePath = Path.of(inputFilePath);
+	// this.copying = copying;
+	// }
+
+	// public InputFileParser(Path inputFilePath) {
+	// this.inputFilePath = inputFilePath;
+	// this.copying = false;
+	// }
+
+	// public InputFileParser(Path inputFilePath, boolean copying) {
+	// this.inputFilePath = inputFilePath;
+	// this.copying = copying;
+	// }
 
 	public Stream<CopyItem> parse() throws IOException {
 		List<String> lines = Files.readAllLines(inputFilePath);
@@ -53,6 +86,10 @@ public class InputFileParser {
 					if (copyFrom.isBlank() || copyTo.isBlank() || copyFrom.startsWith("!")) {
 						return null;
 					}
+
+					if (!copying) {
+						return Util.walkBackupItem(Path.of(copyTo));
+					}
 					Path zipFile = null;
 					String entryName = null;
 					boolean exactly = false;
@@ -74,7 +111,7 @@ public class InputFileParser {
 					}
 					if (inZip) {
 						boolean zipExists = Files.exists(zipFile) && Files.isReadable(zipFile);
-						if (!zipExists && !Util.ignoreMissingSource) {
+						if (!zipExists && !Util.isIgnoreMissingSource()) {
 							throw new RuntimeException("Zip file not found: " + zipFile);
 						}
 						if (zipExists) {

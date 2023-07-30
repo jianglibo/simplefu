@@ -20,9 +20,11 @@ public class CopyTaskTest {
 		Files.createDirectory(dst);
 		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
 		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
+
 		ZipTask zipTask = ZipTask.get(azip, ZipNameType.ABSOLUTE, false);
 		zipTask.push(afile, "a/a.txt");
 		zipTask.push(bfile, "/b/b.txt");
+
 		Assertions.assertThat(zipTask.findExactly("a/a.txt")).isPresent();
 		Assertions.assertThat(zipTask.findExactly("/b/b.txt")).isPresent();
 
@@ -33,7 +35,7 @@ public class CopyTaskTest {
 		Path inpuPath = UtilTest.createAfile(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
 				zipFileName + "!a/a.txt -> " + dstFilename,
 				zipFileName + "!/b/b.txt -> " + dstFilename));
-		Stream<CopyItem> copyItems = new InputFileParser(inpuPath).parse();
+		Stream<CopyItem> copyItems = InputFileParser.copyParser(inpuPath.toString()).parse();
 		CopyTask copyTask = new CopyTask(copyItems, true);
 		copyTask.start();
 		Assertions.assertThat(dst.resolve("a.txt")).exists();
@@ -63,7 +65,7 @@ public class CopyTaskTest {
 		// directory.
 		String dstFilename = dst.toString() + "/bbb";
 		// we point the copyFrom to a directory in a zip file.
-		Stream<CopyItem> copyItems = new InputFileParser("")
+		Stream<CopyItem> copyItems = InputFileParser.copyParser("")
 				.parse(List.of(zipFileName + "!a -> " + dstFilename));
 		CopyTask copyTask = new CopyTask(copyItems, true);
 		copyTask.start();

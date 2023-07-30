@@ -16,7 +16,7 @@ public class CopyTask {
 	}
 
 	public CopyTask(Path inpuPath, boolean copyAlways) throws IOException {
-		this.items = new InputFileParser(inpuPath).parse();
+		this.items = InputFileParser.copyParser(inpuPath.toString()).parse();
 		this.copyAlways = copyAlways;
 	}
 

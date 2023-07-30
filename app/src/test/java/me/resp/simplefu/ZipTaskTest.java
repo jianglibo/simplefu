@@ -11,6 +11,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 public class ZipTaskTest {
 
+	/**
+	 * if zip file doesn't exist, can we still use path api in it?
+	 */
+	@Test
+	void tNotExistZip() {
+		Assertions.assertThatThrownBy(() -> {
+			ZipTask zipTask = ZipTask.get(Path.of("not-exists"), ZipNameType.ABSOLUTE, true);
+		}).hasMessageContaining("Failed to open zip file");
+	}
+
 	@Test
 	void testAddFileAbsolute(@TempDir Path tmpDir) throws IOException {
 		System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");

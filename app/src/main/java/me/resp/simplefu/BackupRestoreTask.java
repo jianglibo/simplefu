@@ -25,7 +25,7 @@ public class BackupRestoreTask {
 	}
 
 	public BackupRestoreTask(Path inpuPath, Path backFile) throws IOException {
-		this.items = new InputFileParser(inpuPath).parse();
+		this.items = InputFileParser.backupRestoreParser(inpuPath.toString()).parse();
 		this.backupFile = backFile;
 	}
 

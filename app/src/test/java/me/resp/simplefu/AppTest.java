@@ -6,7 +6,6 @@ package me.resp.simplefu;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -24,6 +23,18 @@ class AppTest {
     void testErrorTolerance() {
         App.main(new String[] { "--error-tolerance", "5" });
         Assertions.assertThat(Util.errorTolerance).isEqualTo(5);
+    }
+
+    @Test
+    void testIgnoreMissing() {
+        App.main(new String[] { "--ignore-missing-source" });
+        Assertions.assertThat(Util.isIgnoreMissingSource()).isTrue();
+    }
+    @Test
+    void testIgnoreMissing1() {
+        App.main(new String[] {});
+        boolean isIgnoreMissingSource = Util.isIgnoreMissingSource();
+        Assertions.assertThat(isIgnoreMissingSource).isTrue();
     }
 
     @Test

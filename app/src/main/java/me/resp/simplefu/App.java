@@ -45,12 +45,12 @@ public class App implements Callable<Integer> {
         }
 
         if (copyAlwaysExists) {
-            InputFileParser inputFileParser = new InputFileParser(copyAlways);
+            InputFileParser inputFileParser = InputFileParser.copyParser(copyAlways);
             CopyTask task = new CopyTask(inputFileParser.parse(), true);
             task.start();
         }
         if (copyIfMissingExists) {
-            InputFileParser inputFileParser = new InputFileParser(copyIfMissing);
+            InputFileParser inputFileParser = InputFileParser.copyParser(copyIfMissing);
             CopyTask task = new CopyTask(inputFileParser.parse(), false);
             task.start();
         }
@@ -62,7 +62,7 @@ public class App implements Callable<Integer> {
             "--backup-to" }, description = "the zip file to store the backup.") String backupTo,
             @Parameters(index = "0", arity = "0..*", description = "files which list the files to process.") List<String> inputFiles)
             throws IOException {
-        Util.ignoreMissingSource = true;
+        // Util.setIgnoreMissingSource(true);
         inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
         if (inputFiles.isEmpty()) {
             if (Files.exists(Path.of(COPY_ALWAYS_FILENAME))) {
@@ -80,7 +80,7 @@ public class App implements Callable<Integer> {
 
         BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
                 inputFiles.stream()
-                        .map(InputFileParser::new)
+                        .map(InputFileParser::backupRestoreParser)
                         .flatMap(ip -> {
                             return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
                         }),
@@ -94,7 +94,7 @@ public class App implements Callable<Integer> {
             "--restore-from" }, description = "the zip file to restore from.") String backupFile,
             @Parameters(index = "0", arity = "0..*", description = "files list the files to process.") List<String> inputFiles)
             throws IOException {
-        Util.ignoreMissingSource = true;
+        // Util.setIgnoreMissingSource(true);
         inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
         if (inputFiles.isEmpty()) {
             if (Files.exists(Path.of(COPY_ALWAYS_FILENAME))) {
@@ -111,7 +111,7 @@ public class App implements Callable<Integer> {
         }
         BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
                 inputFiles.stream()
-                        .map(InputFileParser::new)
+                        .map(InputFileParser::backupRestoreParser)
                         .flatMap(ip -> {
                             return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
                         }),
@@ -128,7 +128,8 @@ public class App implements Callable<Integer> {
 
     private int executionStrategy(ParseResult parseResult) {
         Util.errorTolerance = errorTolerance;
-        Util.ignoreMissingSource = ignoreMissingSource;
+        Util.setIgnoreMissingSource(ignoreMissingSource);
+        System.out.printf("errorTolerance: %d, ignoreMissingSource: %s%n", errorTolerance, ignoreMissingSource);
         return new CommandLine.RunLast().execute(parseResult); // default execution strategy
     }
 
