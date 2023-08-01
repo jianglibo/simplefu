@@ -15,6 +15,8 @@ import picocli.CommandLine;
 
 class AppTest {
 
+    protected static final String COPY_ALWAYS_FILENAME = "copy-always.txt";
+    protected static final String COPY_IF_MISSING_FILENAME = "copy-if-missing.txt";
     // # the relative path is relative to the working directory.
     // fixtures/zip-playground/a.txt -> ../notingit
     // fixtures/zip-playground/adir/b.txt -> ../notingit
@@ -30,6 +32,7 @@ class AppTest {
         App.main(new String[] { "--ignore-missing-source" });
         Assertions.assertThat(Util.isIgnoreMissingSource()).isTrue();
     }
+
     @Test
     void testIgnoreMissing1() {
         App.main(new String[] {});
@@ -44,17 +47,17 @@ class AppTest {
 
         Path backupTo = tmpDir.resolve("backup.zip");
 
-        if (!Files.exists(pwd.resolve(App.COPY_ALWAYS_FILENAME))) {
+        if (!Files.exists(pwd.resolve(COPY_ALWAYS_FILENAME))) {
             Files.copy(pwd.resolve("fixtures/copy-always.txt"),
-                    pwd.resolve(App.COPY_ALWAYS_FILENAME));
+                    pwd.resolve(COPY_ALWAYS_FILENAME));
         }
 
         int exitCode = new CommandLine(new App()).execute("backup", "--backup-to",
                 backupTo.toString());
 
         Assertions.assertThat(exitCode).isEqualTo(0);
-        if (Files.exists(pwd.resolve(App.COPY_ALWAYS_FILENAME))) {
-            Files.delete(pwd.resolve(App.COPY_ALWAYS_FILENAME));
+        if (Files.exists(pwd.resolve(COPY_ALWAYS_FILENAME))) {
+            Files.delete(pwd.resolve(COPY_ALWAYS_FILENAME));
         }
 
         exitCode = new CommandLine(new App()).execute("backup", "--backup-to",
