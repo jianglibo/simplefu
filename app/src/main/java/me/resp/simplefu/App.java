@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import me.resp.simplefu.model.DeploymentEnv;
@@ -41,12 +42,16 @@ public class App implements Callable<Integer> {
      * @return
      * @throws IOException
      */
-    @Command(name = "update", description = "update the destination with the files in the list. and versionlize the destination.")
+    @Command(name = "update", mixinStandardHelpOptions = true, description = "update the destination with the files in the list. and versionlize the destination.")
     public Integer update(@Option(names = {
             "--copy-always" }, description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
             @Option(names = {
                     "--copy-if-missing" }, description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
             throws IOException {
+        if (copyAlways == null && copyIfMissing == null) {
+            System.out.println("nothing to do");
+            return 0;
+        }
         boolean copyAlwaysExists = Files.exists(Path.of(copyAlways));
         boolean copyIfMissingExists = Files.exists(Path.of(copyIfMissing));
         if (!copyAlwaysExists && !copyIfMissingExists) {
@@ -71,7 +76,7 @@ public class App implements Callable<Integer> {
         return 0;
     }
 
-    @Command(name = "rollback", description = "rollback the destination with the files in the list.")
+    @Command(name = "rollback", mixinStandardHelpOptions = true, description = "rollback the destination with the files in the list.")
     public Integer rollback(
             @Parameters(index = "0", arity = "1..*", description = "files list the files to process.") List<String> inputFiles)
             throws IOException {
@@ -85,7 +90,34 @@ public class App implements Callable<Integer> {
                 .flatMap(ip -> {
                     return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
                 }));
-        versionTask.startBackup();
+        versionTask.startRollback();
+        return 0;
+    }
+
+    /**
+     * 
+     * @param deployment_downloads.txt
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    @Command(name = "download", mixinStandardHelpOptions = true, description = "download all files listed in the 'deployment_downloads.txt'")
+    public Integer download(
+            @Parameters(index = "0", arity = "0..1", description = "files list the files to process.") Path inputFile)
+            throws IOException, InterruptedException {
+        DeploymentEnv deploymentEnv = Util.loadDeploymentEnv(deploymentEnvFile);
+        if (deploymentEnv == null) {
+            System.out.println("deployment env file not found: " + deploymentEnvFile.toAbsolutePath());
+            return 1;
+        }
+        if (inputFile == null) {
+            PureHttpClient.downloadDeploymentDownloadsFromAzure(null, deploymentEnv.getServerRootUri(),
+                    deploymentEnv.getShortTimePassword());
+        } else {
+            PureHttpClient.downloadDeploymentDownloadsFromAzureOneFile(null, inputFile,
+                    deploymentEnv.getServerRootUri(),
+                    deploymentEnv.getShortTimePassword()).collect(Collectors.toList());
+        }
         return 0;
     }
 
@@ -132,7 +164,7 @@ public class App implements Callable<Integer> {
      * 
      * @throws InterruptedException
      */
-    @Command(name = "backup", description = "backup files")
+    @Command(name = "backup", mixinStandardHelpOptions = true, description = "backup files")
     public Integer backup(@Option(names = {
             "--backup-to" }, description = "the zip file to store the backup.") String backupTo,
             @Option(names = {
@@ -169,7 +201,7 @@ public class App implements Callable<Integer> {
      * @return
      * @throws IOException
      */
-    @Command(name = "restore", description = "restore files")
+    @Command(name = "restore", mixinStandardHelpOptions = true, description = "restore files")
     public Integer restore(@Option(names = {
             "--restore-from" }, description = "the zip file to restore from.") String backupFile,
             @Parameters(index = "0", arity = "1..*", description = "files list the files to process.") List<String> inputFiles)
@@ -190,7 +222,7 @@ public class App implements Callable<Integer> {
         return 0;
     }
 
-    @Command(name = "unzip", description = "do unzip")
+    @Command(name = "unzip", mixinStandardHelpOptions = true, description = "do unzip")
     public Integer unzip(@Option(names = {
             "--to-dir" }, description = "extracted files go the current directory.") Path toDir,
             @Parameters(index = "0", arity = "1", description = "files list the files to process.") Path zipFile)
@@ -208,7 +240,7 @@ public class App implements Callable<Integer> {
     private int executionStrategy(ParseResult parseResult) {
         Util.errorTolerance = errorTolerance;
         Util.setIgnoreMissingSource(ignoreMissingSource);
-        System.out.printf("errorTolerance: %d, ignoreMissingSource: %s%n", errorTolerance, ignoreMissingSource);
+        // System.out.printf("errorTolerance: %d, ignoreMissingSource: %s%n", errorTolerance, ignoreMissingSource);
         return new CommandLine.RunLast().execute(parseResult); // default execution strategy
     }
 

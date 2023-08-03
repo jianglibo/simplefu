@@ -41,6 +41,11 @@ class AppTest {
     }
 
     @Test
+    void testDownload() {
+        App.main(new String[] {"download", "abc.txt"});
+    }
+
+    @Test
     void backupAndRestore(@TempDir Path tmpDir) throws IOException {
         Path pwd = Path.of("").normalize().toAbsolutePath();
         Assertions.assertThat(pwd.getFileName().toString()).isEqualTo("app");

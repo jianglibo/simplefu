@@ -100,28 +100,34 @@ public class PureHttpClient {
    */
   public static List<Path> downloadDeploymentDownloadsFromAzure(Path workingDir, String baseUri,
       String shortTimePassword) throws IOException, InterruptedException {
-
-    return Files.walk(workingDir)
+    Path workingDir1 = workingDir == null ? Path.of(".") : workingDir;
+    return Files.walk(workingDir1)
         .filter(p -> p.getFileName().toString().equals(DEPLOYMENT_DOWNLOADS_FILE_PATH))
         .flatMap(p -> {
-          try {
-            return Files.readAllLines(p).stream().map(line -> {
-              try {
-                String[] ss = line.split(",");
-                if (ss.length == 3) {
-                  long assetId = Long.parseLong(ss[0].trim());
-                  return downloadFromAzure(workingDir.resolve(ss[1].trim()), baseUri, assetId,
-                      shortTimePassword);
-                }
-              } catch (IOException | InterruptedException | NumberFormatException e) {
-                e.printStackTrace();
-              }
-              return null;
-            }).filter(p1 -> p1 != null);
-          } catch (IOException e) {
-            e.printStackTrace();
-            return Stream.empty();
-          }
+          return downloadDeploymentDownloadsFromAzureOneFile(workingDir1, p, baseUri, shortTimePassword);
         }).collect(java.util.stream.Collectors.toList());
+  }
+
+  public static Stream<Path> downloadDeploymentDownloadsFromAzureOneFile(Path workingDir, Path deploymentDownloadsFile,
+      String baseUri,
+      String shortTimePassword) {
+    Path workingDir1 = workingDir == null ? Path.of(".") : workingDir;
+    try {
+      return Files.readAllLines(deploymentDownloadsFile).stream().map(line -> {
+        try {
+          String[] ss = line.split(",");
+          if (ss.length == 3) {
+            long assetId = Long.parseLong(ss[0].trim());
+            return downloadFromAzure(workingDir1.resolve(ss[1].trim()), baseUri, assetId,
+                shortTimePassword);
+          }
+        } catch (IOException | InterruptedException | NumberFormatException e) {
+        }
+        return null;
+      }).filter(p1 -> p1 != null);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return Stream.empty();
+    }
   }
 }

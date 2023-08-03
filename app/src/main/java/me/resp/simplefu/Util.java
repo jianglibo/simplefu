@@ -248,6 +248,9 @@ public class Util {
      */
     public static DeploymentEnv loadDeploymentEnv(Path file) throws IOException {
         file = file == null ? Path.of("deployment.env.properties") : file;
+        if (!Files.exists(file)) {
+            return null;
+        }
         Properties properties = new Properties();
         properties.load(Files.newInputStream(file));
         DeploymentEnv deploymentEnv = new DeploymentEnv();
