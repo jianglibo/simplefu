@@ -1,13 +1,17 @@
 package me.resp.simplefu;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import me.resp.simplefu.model.DeploymentEnv;
 
 public class UtilTest {
 
@@ -50,7 +54,6 @@ public class UtilTest {
 
 		Util.exceptionHandler(() -> {
 		}, 1, "will throw exception");
-
 	}
 
 	@Test
@@ -67,5 +70,53 @@ public class UtilTest {
 		Assertions.assertThatThrownBy(() -> {
 			Files.copy(Path.of("I don't exist"), Path.of(""));
 		}).hasMessageContaining("I don't exist");
+	}
+
+	@Test
+	void zipAtSameDirectory(@TempDir Path tmpDir) throws IOException {
+		Path d = tmpDir.resolve("d");
+		Files.createDirectories(d);
+
+		Path a = createAfile(d.resolve("a"), "a");
+		Path b = createAfile(d.resolve("b"), "b");
+
+		Path zip = tmpDir.resolve("zip.zip");
+
+		List<Path> paths = Util.zipAtSameDirectory(zip, d);
+		Assertions.assertThat(paths).hasSize(2);
+
+		Path unzip = tmpDir.resolve("unzip");
+		Files.createDirectories(unzip);
+		Files.copy(zip, unzip.resolve(zip.getFileName()));
+		Path toUnzip = unzip.resolve(zip.getFileName());
+		Assertions.assertThat(toUnzip).exists();
+		List<Path> paths2 = Util.unzipTo(toUnzip, null);
+		Assertions.assertThat(paths2).hasSize(2);
+
+		Path d2 = tmpDir.resolve("d2");
+		Files.createDirectories(d2);
+
+		paths2 = Util.unzipTo(toUnzip, d2);
+		Assertions.assertThat(paths2).hasSize(2);
+
+		Assertions.assertThat(Files.readAllLines(d2.resolve("a"))).containsExactly("a");
+		Assertions.assertThat(Files.readAllLines(d2.resolve("b"))).containsExactly("b");
+	}
+
+	@Test
+	void loadDeploymentEnv() throws IOException {
+		Path p = Path.of("src/test/resources/deployment.env.properties");
+		DeploymentEnv denv =  Util.loadDeploymentEnv(p);
+		/*
+		 * conent of deployment.env.properties
+		 * shortTimePassword=apassword
+		 * serverRootUri=https://resp.me
+		 * thisDeploymentId=4
+		 * thisDeployDefinitionId=6
+		 */
+		Assertions.assertThat(denv.getShortTimePassword()).isEqualTo("apassword");
+		Assertions.assertThat(denv.getServerRootUri()).isEqualTo("https://resp.me");
+		Assertions.assertThat(denv.getThisDeploymentId()).isEqualTo("4");
+		Assertions.assertThat(denv.getThisDeployDefinitionId()).isEqualTo("6");
 	}
 }

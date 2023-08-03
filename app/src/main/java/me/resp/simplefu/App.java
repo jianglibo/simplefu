@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
+import me.resp.simplefu.model.DeploymentEnv;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -19,14 +20,16 @@ import picocli.CommandLine.ParseResult;
 
 @Command(name = "simplefu", mixinStandardHelpOptions = true, version = "simplefu 1.0", description = "a companion tool for resp.me deployments")
 public class App implements Callable<Integer> {
-
-
+    public static final String DEPLOYMENT_ENV_FILENAME = "deployment.env.properties";
     @Option(names = {
             "--error-tolerance" }, description = "the level of tolerance before aborting the task. default: ${DEFAULT-VALUE}, means ZERO tolerance.")
     Integer errorTolerance = 0;
 
     @Option(names = "--ignore-missing-source", description = "create a new archive")
     boolean ignoreMissingSource;
+
+    @Option(names = "--deployment-env-file", defaultValue = DEPLOYMENT_ENV_FILENAME, description = "create a new archive")
+    Path deploymentEnvFile;
 
     /**
      * No default value. It's not a good idea to have a default value for this.
@@ -38,8 +41,8 @@ public class App implements Callable<Integer> {
      * @return
      * @throws IOException
      */
-    @Command(name = "copy", description = "copy files")
-    public Integer copy(@Option(names = {
+    @Command(name = "update", description = "update the destination with the files in the list. and versionlize the destination.")
+    public Integer update(@Option(names = {
             "--copy-always" }, description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
             @Option(names = {
                     "--copy-if-missing" }, description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
@@ -53,6 +56,10 @@ public class App implements Callable<Integer> {
 
         if (copyAlwaysExists) {
             InputFileParser inputFileParser = InputFileParser.copyParser(copyAlways);
+            VersionTask versionTask = new VersionTask(inputFileParser.parse());
+            versionTask.startBackup();
+
+            inputFileParser = InputFileParser.copyParser(copyAlways);
             CopyTask task = new CopyTask(inputFileParser.parse(), true);
             task.start();
         }
@@ -64,25 +71,75 @@ public class App implements Callable<Integer> {
         return 0;
     }
 
+    @Command(name = "rollback", description = "rollback the destination with the files in the list.")
+    public Integer rollback(
+            @Parameters(index = "0", arity = "1..*", description = "files list the files to process.") List<String> inputFiles)
+            throws IOException {
+        inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
+        if (inputFiles.isEmpty()) {
+            System.out.println("input files don't exist, nothing to do");
+            return 0;
+        }
+        VersionTask versionTask = new VersionTask(inputFiles.stream()
+                .map(InputFileParser::backupRestoreParser)
+                .flatMap(ip -> {
+                    return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
+                }));
+        versionTask.startBackup();
+        return 0;
+    }
+
     /**
      * No default value. It's not a good idea to have a default value for this.
+     * Sometimes we want to controll the behavior
+     * precisely.
+     * 
+     * @param copyAlways
+     * @param copyIfMissing
+     * @return
+     * @throws IOException
+     */
+    // @Command(name = "copy", description = "copy files")
+    // public Integer copy(@Option(names = {
+    // "--copy-always" }, description = "the files in this list will be copied even
+    // if they already exist in the destination") String copyAlways,
+    // @Option(names = {
+    // "--copy-if-missing" }, description = "the files in this list will be copied
+    // only if they do not exist in the destination") String copyIfMissing)
+    // throws IOException {
+    // boolean copyAlwaysExists = Files.exists(Path.of(copyAlways));
+    // boolean copyIfMissingExists = Files.exists(Path.of(copyIfMissing));
+    // if (!copyAlwaysExists && !copyIfMissingExists) {
+    // System.out.println("input files don't exist, nothing to do");
+    // return 0;
+    // }
+
+    // if (copyAlwaysExists) {
+    // InputFileParser inputFileParser = InputFileParser.copyParser(copyAlways);
+    // CopyTask task = new CopyTask(inputFileParser.parse(), true);
+    // task.start();
+    // }
+    // if (copyIfMissingExists) {
+    // InputFileParser inputFileParser = InputFileParser.copyParser(copyIfMissing);
+    // CopyTask task = new CopyTask(inputFileParser.parse(), false);
+    // task.start();
+    // }
+    // return 0;
+    // }
+
+    /**
+     * No default value. It's not a good idea to have a default value for this.
+     * 
+     * @throws InterruptedException
      */
     @Command(name = "backup", description = "backup files")
     public Integer backup(@Option(names = {
             "--backup-to" }, description = "the zip file to store the backup.") String backupTo,
+            @Option(names = {
+                    "--upload-to-azure" }, description = "upload the zip file to azure and associate with this deployment.") boolean uploadToAzure,
             @Parameters(index = "0", arity = "1..*", description = "files which list the files to process.") List<String> inputFiles)
-            throws IOException {
-        // Util.setIgnoreMissingSource(true);
+            throws IOException, InterruptedException {
         inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
-        // if (inputFiles.isEmpty()) {
-        // if (Files.exists(Path.of(COPY_ALWAYS_FILENAME))) {
-        // inputFiles.add(COPY_ALWAYS_FILENAME);
-        // }
-        // if (Files.exists(Path.of(COPY_IF_MISSING_FILENAME))) {
-        // inputFiles.add(COPY_IF_MISSING_FILENAME);
-        // }
-        // }
-
         if (inputFiles.isEmpty()) {
             System.out.println("input files don't exist, nothing to do");
             return 0;
@@ -95,7 +152,12 @@ public class App implements Callable<Integer> {
                             return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
                         }),
                 backupTo == null ? null : Path.of(backupTo));
-        backupRestoreTask.backup();
+        Path backuped = backupRestoreTask.backup();
+        if (uploadToAzure) {
+            DeploymentEnv deploymentEnv = Util.loadDeploymentEnv(deploymentEnvFile);
+            PureHttpClient.uploadToAzure(backuped, deploymentEnv.getServerRootUri(),
+                    deploymentEnv.getShortTimePassword(), 10, "azureblob");
+        }
         return 0;
     }
 
@@ -112,16 +174,7 @@ public class App implements Callable<Integer> {
             "--restore-from" }, description = "the zip file to restore from.") String backupFile,
             @Parameters(index = "0", arity = "1..*", description = "files list the files to process.") List<String> inputFiles)
             throws IOException {
-        // Util.setIgnoreMissingSource(true);
         inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
-        // if (inputFiles.isEmpty()) {
-        // if (Files.exists(Path.of(COPY_ALWAYS_FILENAME))) {
-        // inputFiles.add(COPY_ALWAYS_FILENAME);
-        // }
-        // if (Files.exists(Path.of(COPY_IF_MISSING_FILENAME))) {
-        // inputFiles.add(COPY_IF_MISSING_FILENAME);
-        // }
-        // }
         if (inputFiles.isEmpty()) {
             System.out.println("input files don't exist, nothing to do");
             return 0;
@@ -134,6 +187,15 @@ public class App implements Callable<Integer> {
                         }),
                 Path.of(backupFile));
         backupRestoreTask.restore();
+        return 0;
+    }
+
+    @Command(name = "unzip", description = "do unzip")
+    public Integer unzip(@Option(names = {
+            "--to-dir" }, description = "extracted files go the current directory.") Path toDir,
+            @Parameters(index = "0", arity = "1", description = "files list the files to process.") Path zipFile)
+            throws IOException {
+        Util.unzipTo(zipFile, toDir);
         return 0;
     }
 

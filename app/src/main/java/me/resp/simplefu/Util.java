@@ -8,11 +8,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import lombok.Getter;
+import me.resp.simplefu.model.DeploymentEnv;
 
 public class Util {
     public static Integer errorTolerance = 0;
@@ -169,4 +177,85 @@ public class Util {
                     .build());
         }
     }
+
+    public static <T> Stream<T> getStreamFromIterator(Iterator<T> iterator) {
+        // Convert the iterator to Spliterator
+        Spliterator<T> spliterator = Spliterators
+                .spliteratorUnknownSize(iterator, 0);
+        // Get a Sequential Stream from spliterator
+        return StreamSupport.stream(spliterator, false);
+    }
+
+    public static List<Path> unzipTo(Path zipFile, Path toDir) throws IOException {
+        FileSystem fs = createZipFileSystem(zipFile, false);
+        toDir = toDir == null ? zipFile.getParent() : toDir;
+        Path toDir1 = toDir;
+        List<Path> paths = getStreamFromIterator(fs.getRootDirectories().iterator())
+                .flatMap(root -> {
+                    try {
+                        return Files.walk(root).map(p -> {
+                            try {
+                                if (Files.isDirectory(p)) {
+                                    return null;
+                                }
+                                Path relativePath = root.relativize(p);
+                                Path copyTo = toDir1.resolve(relativePath.toString());
+                                return copyFile(p, copyTo);
+                            } catch (IOException e) {
+                                return null;
+                            }
+                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return Stream.empty();
+                    }
+                })
+                .filter(Objects::nonNull).collect(Collectors.toList());
+        fs.close();
+        return paths;
+    }
+
+    public static List<Path> zipAtSameDirectory(Path createdZip, Path directoryToZip) throws IOException {
+        FileSystem fs = createZipFileSystem(createdZip, true);
+        Path root = fs.getPath("/");
+        List<Path> paths = Files.walk(directoryToZip).map(p -> {
+            try {
+                if (Files.isDirectory(p)) {
+                    return null;
+                }
+                Path relativePath = directoryToZip.relativize(p);
+                Path copyTo = root.resolve(relativePath.toString());
+                return copyFile(p, copyTo);
+                // Files.copy(p, copyTo);
+            } catch (IOException e) {
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+        fs.close();
+        return paths;
+    }
+
+    /**
+     * deployment.env.properties content:
+     * shortTimePassword=
+     * serverRootUri=
+     * thisDeploymentId=
+     * thisDeployDefinitionId=
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static DeploymentEnv loadDeploymentEnv(Path file) throws IOException {
+        file = file == null ? Path.of("deployment.env.properties") : file;
+        Properties properties = new Properties();
+        properties.load(Files.newInputStream(file));
+        DeploymentEnv deploymentEnv = new DeploymentEnv();
+        deploymentEnv.setShortTimePassword(properties.getProperty("shortTimePassword"));
+        deploymentEnv.setServerRootUri(properties.getProperty("serverRootUri"));
+        deploymentEnv.setThisDeploymentId(properties.getProperty("thisDeploymentId"));
+        deploymentEnv.setThisDeployDefinitionId(properties.getProperty("thisDeployDefinitionId"));
+        return deploymentEnv;
+    }
+
 }

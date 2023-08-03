@@ -27,14 +27,19 @@ file list file copy-if-missing.txt will only copy when the destination file is m
 ! split will extract the exactly file from the zip archive, !~ will extract the first file endswith the name.
 
 ## command
-copy files;
+update files;
 ```bash
-java -jar simplefu.jar copy --copy-always filelistfile.txt --copy-if-missing filelistfile.txt
+java -jar simplefu.jar update --copy-always copy-always-list.txt --copy-if-missing copy-if-missing-list.txt
+```
+
+rollback files;
+```bash
+java -jar simplefu.jar rollback copy-always-list.txt
 ```
 
 backup all the files about copy to.
 ```bash
-java -jar simplefu.jar backup --backup-to some.zip file-list-file1, file-list-file2 ...
+java -jar simplefu.jar backup --upload-to-azure --backup-to some.zip file-list-file1, file-list-file2 ...
 ```
 restore files at the destination
 
