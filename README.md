@@ -46,3 +46,9 @@ restore files at the destination
 ```bash
 java -jar simplefu.jar restore --restore-from some.zip file-list-file1, file-list-file2 ...
 ```
+
+## delombok
+
+java -jar C:\Users\jiang\.m2\repository\org\projectlombok\lombok\1.18.22\lombok-1.18.22.jar delombok app\src -d app\src-delomboked
+
+Set-Item -Path Env:\https_proxy -Value 'socks5h://127.0.0.1:7890'
