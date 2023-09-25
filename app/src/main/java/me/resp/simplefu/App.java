@@ -4,11 +4,9 @@
 package me.resp.simplefu;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,61 +18,77 @@ import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParseResult;
 
 @Command(name = "simplefu", mixinStandardHelpOptions = true, version = "simplefu 1.0", description = "a companion tool for resp.me deployments")
-public class App implements Callable<Integer> {
+public class App {
     public static final String DEPLOYMENT_ENV_FILENAME = "deployment.env.properties";
     @Option(names = {
             "--error-tolerance" }, description = "the level of tolerance before aborting the task. default: ${DEFAULT-VALUE}, means ZERO tolerance.")
     Integer errorTolerance = 0;
 
-    @Option(names = "--ignore-missing-source", description = "create a new archive")
+    @Option(names = "--ignore-missing-source", description = "ignore file not exists error.")
     boolean ignoreMissingSource;
 
-    @Option(names = "--deployment-env-file", defaultValue = DEPLOYMENT_ENV_FILENAME, description = "create a new archive")
+    @Option(names = "--deployment-env-file", defaultValue = DEPLOYMENT_ENV_FILENAME, description = "the path of deployment.env.properties file.")
     Path deploymentEnvFile;
 
-    /**
-     * No default value. It's not a good idea to have a default value for this.
-     * Sometimes we want to controll the behavior
-     * precisely.
-     * 
-     * @param copyAlways
-     * @param copyIfMissing
-     * @return
-     * @throws IOException
-     */
-    @Command(name = "update", mixinStandardHelpOptions = true, description = "update the destination with the files in the list. and versionlize the destination.")
-    public Integer update(@Option(names = {
-            "--copy-always" }, description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
-            @Option(names = {
-                    "--copy-if-missing" }, description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
+    @Command(mixinStandardHelpOptions = true, description = "copy all the files listed in a description file.")
+    Integer copyfilelist(
+            @Parameters(index = "0", paramLabel = "<filelist>", description = "the file contains the list.") String filelist,
+            @Option(names = "--backup") boolean backup, @Option(names = "--override") boolean override)
             throws IOException {
-        if (copyAlways == null && copyIfMissing == null) {
-            System.out.println("nothing to do");
-            return 0;
-        }
-        boolean copyAlwaysExists = Files.exists(Path.of(copyAlways));
-        boolean copyIfMissingExists = Files.exists(Path.of(copyIfMissing));
-        if (!copyAlwaysExists && !copyIfMissingExists) {
-            System.out.println("input files don't exist, nothing to do");
-            return 0;
-        }
-
-        if (copyAlwaysExists) {
-            InputFileParser inputFileParser = InputFileParser.copyParser(copyAlways);
+        if (backup) {
+            InputFileParser inputFileParser = InputFileParser.copyParser(filelist);
             VersionTask versionTask = new VersionTask(inputFileParser.parse());
             versionTask.startBackup();
-
-            inputFileParser = InputFileParser.copyParser(copyAlways);
-            CopyTask task = new CopyTask(inputFileParser.parse(), true);
-            task.start();
         }
-        if (copyIfMissingExists) {
-            InputFileParser inputFileParser = InputFileParser.copyParser(copyIfMissing);
-            CopyTask task = new CopyTask(inputFileParser.parse(), false);
-            task.start();
-        }
+        InputFileParser inputFileParser = InputFileParser.copyParser(filelist);
+        CopyTask task = new CopyTask(inputFileParser.parse(), override);
+        task.start();
         return 0;
     }
+
+    // /**
+    //  * No default value. It's not a good idea to have a default value for this.
+    //  * Sometimes we want to controll the behavior
+    //  * precisely.
+    //  * 
+    //  * @param copyAlways
+    //  * @param copyIfMissing
+    //  * @return
+    //  * @throws IOException
+    //  */
+    // @Command(name = "update", mixinStandardHelpOptions = true, description = "update the destination with the files in the list. and versionlize the destination.")
+    // public Integer update(@Option(names = {
+    //         "--copy-always" }, description = "the files in this list will be copied even if they already exist in the destination") String copyAlways,
+    //         @Option(names = {
+    //                 "--copy-if-missing" }, description = "the files in this list will be copied only if they do not exist in the destination") String copyIfMissing)
+    //         throws IOException {
+    //     if (copyAlways == null && copyIfMissing == null) {
+    //         System.out.println("nothing to do");
+    //         return 0;
+    //     }
+    //     boolean copyAlwaysExists = Files.exists(Path.of(copyAlways));
+    //     boolean copyIfMissingExists = Files.exists(Path.of(copyIfMissing));
+    //     if (!copyAlwaysExists && !copyIfMissingExists) {
+    //         System.out.println("input files don't exist, nothing to do");
+    //         return 0;
+    //     }
+
+    //     if (copyAlwaysExists) {
+    //         InputFileParser inputFileParser = InputFileParser.copyParser(copyAlways);
+    //         VersionTask versionTask = new VersionTask(inputFileParser.parse());
+    //         versionTask.startBackup();
+
+    //         inputFileParser = InputFileParser.copyParser(copyAlways);
+    //         CopyTask task = new CopyTask(inputFileParser.parse(), true);
+    //         task.start();
+    //     }
+    //     if (copyIfMissingExists) {
+    //         InputFileParser inputFileParser = InputFileParser.copyParser(copyIfMissing);
+    //         CopyTask task = new CopyTask(inputFileParser.parse(), false);
+    //         task.start();
+    //     }
+    //     return 0;
+    // }
 
     @Command(name = "rollback", mixinStandardHelpOptions = true, description = "rollback the destination with the files in the list.")
     public Integer rollback(
@@ -86,7 +100,7 @@ public class App implements Callable<Integer> {
             return 0;
         }
         VersionTask versionTask = new VersionTask(inputFiles.stream()
-                .map(InputFileParser::backupRestoreParser)
+                .map(InputFileParser::restoreParser)
                 .flatMap(ip -> {
                     return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
                 }));
@@ -166,10 +180,10 @@ public class App implements Callable<Integer> {
      */
     @Command(name = "backup", mixinStandardHelpOptions = true, description = "backup files")
     public Integer backup(@Option(names = {
-            "--backup-to" }, description = "the zip file to store the backup.") String backupTo,
+            "--backup-to" }, paramLabel = "<filename>", description = "the zip file to store the backup.") String backupTo,
             @Option(names = {
                     "--upload-to-azure" }, description = "upload the zip file to azure and associate with this deployment.") boolean uploadToAzure,
-            @Parameters(index = "0", arity = "1..*", description = "files which list the files to process.") List<String> inputFiles)
+            @Parameters(index = "0", arity = "1..*", paramLabel = "<filelistfiles>", description = "files which list the files to process.") List<String> inputFiles)
             throws IOException, InterruptedException {
         inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
         if (inputFiles.isEmpty()) {
@@ -179,7 +193,7 @@ public class App implements Callable<Integer> {
 
         BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
                 inputFiles.stream()
-                        .map(InputFileParser::backupRestoreParser)
+                        .map(InputFileParser::restoreParser)
                         .flatMap(ip -> {
                             return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
                         }),
@@ -213,7 +227,7 @@ public class App implements Callable<Integer> {
         }
         BackupRestoreTask backupRestoreTask = new BackupRestoreTask(
                 inputFiles.stream()
-                        .map(InputFileParser::backupRestoreParser)
+                        .map(InputFileParser::restoreParser)
                         .flatMap(ip -> {
                             return Util.exceptionHandler(() -> ip.parse(), Stream.empty(), 1, "parse filelistfile");
                         }),
@@ -224,23 +238,18 @@ public class App implements Callable<Integer> {
 
     @Command(name = "unzip", mixinStandardHelpOptions = true, description = "do unzip")
     public Integer unzip(@Option(names = {
-            "--to-dir" }, description = "extracted files go the current directory.") Path toDir,
+            "--to-dir" }, description = "extracted files go this directory.") Path toDir,
             @Parameters(index = "0", arity = "1", description = "files list the files to process.") Path zipFile)
             throws IOException {
         Util.unzipTo(zipFile, toDir);
         return 0;
     }
 
-    @Override
-    public Integer call() throws Exception { // your business logic goes here...
-        System.out.println("Subcommand needed: 'copy', 'backup' or 'restore'");
-        return 0;
-    }
-
     private int executionStrategy(ParseResult parseResult) {
         Util.errorTolerance = errorTolerance;
         Util.setIgnoreMissingSource(ignoreMissingSource);
-        // System.out.printf("errorTolerance: %d, ignoreMissingSource: %s%n", errorTolerance, ignoreMissingSource);
+        // System.out.printf("errorTolerance: %d, ignoreMissingSource: %s%n",
+        // errorTolerance, ignoreMissingSource);
         return new CommandLine.RunLast().execute(parseResult); // default execution strategy
     }
 

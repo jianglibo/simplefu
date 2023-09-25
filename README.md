@@ -11,25 +11,25 @@ Designed with a focus on reliability and convenience, rather than performance or
 ./gradle shadowJar
 ```
 
-file list file copy-always.txt, files in this list will always be copied to the destination even if the file already exists.
+or jbang counterpart:
+
+```
+jbang DeployUtil.java
+```
+
+file list file:
 ```text
 /some/path/tofile/a.txt -> /another/path/
 /some/path/tozipfile/a.zip!x/y/z.txt -> /another/path/
 /some/path/tozipfile/a.zip!~y.txt -> /another/path/
 ```
 
-file list file copy-if-missing.txt will only copy when the destination file is missing.
-```text
-/some/path/tofile/a.txt -> /another/path/
-/some/path/tozipfile/a.zip!x/y/z.txt -> /another/path/
-/some/path/tozipfile/a.zip!~y.txt -> /another/path/
-```
 ! split will extract the exactly file from the zip archive, !~ will extract the first file endswith the name.
 
 ## command
-update files;
+copy files;
 ```bash
-java -jar simplefu.jar update --copy-always copy-always-list.txt --copy-if-missing copy-if-missing-list.txt
+java -jar simplefu.jar copyfilelist copy-always-list.txt 
 ```
 
 rollback files;
@@ -52,3 +52,14 @@ java -jar simplefu.jar restore --restore-from some.zip file-list-file1, file-lis
 java -jar C:\Users\jiang\.m2\repository\org\projectlombok\lombok\1.18.22\lombok-1.18.22.jar delombok app\src -d app\src-delomboked
 
 Set-Item -Path Env:\https_proxy -Value 'socks5h://127.0.0.1:7890'
+
+## gradle
+
+./gradlew -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=7890
+
+modify:
+gradle-wrapper.properties
+
+distributionUrl=gradle-8.2.1-bin.zip
+
+ls ~/.gradle/caches/modules-2/files-2.1/

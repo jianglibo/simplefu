@@ -74,7 +74,7 @@ public class BackupRestoreTaskTest {
 
 		// We should copy the files to the dst first or else the backup will skip the
 		// missing items.
-		BackupRestoreTask backupRestoreTask = new BackupRestoreTask(InputFileParser.backupRestoreParser("")
+		BackupRestoreTask backupRestoreTask = new BackupRestoreTask(InputFileParser.restoreParser("")
 				.parse(List.of(azip.toString() + "!a -> " + dst)), null);
 		Path backuped = backupRestoreTask.backup();
 
@@ -94,7 +94,7 @@ public class BackupRestoreTaskTest {
 		Files.copy(bfile, dst.resolve("b.txt"));
 		ZipTask.clearCache();
 
-		backupRestoreTask = new BackupRestoreTask(InputFileParser.backupRestoreParser("")
+		backupRestoreTask = new BackupRestoreTask(InputFileParser.restoreParser("")
 				.parse(List.of(azip.toString() + "!a -> " + dst)), null);
 		backuped = backupRestoreTask.backup();
 
@@ -118,7 +118,7 @@ public class BackupRestoreTaskTest {
 		});
 
 		BackupRestoreTask restoreTask = new BackupRestoreTask(
-				InputFileParser.backupRestoreParser("")
+				InputFileParser.restoreParser("")
 						.parse(List.of(azip.toString() + "!a -> " + dst)),
 				backuped);
 		long count = restoreTask.restore();

@@ -31,32 +31,12 @@ public class InputFileParser {
 		return inputFileParser;
 	}
 
-	public static InputFileParser backupRestoreParser(String inputFilePath) {
+	public static InputFileParser restoreParser(String inputFilePath) {
 		InputFileParser inputFileParser = new InputFileParser();
 		inputFileParser.copying = false;
 		inputFileParser.inputFilePath = Path.of(inputFilePath);
 		return inputFileParser;
 	}
- 
-	//  public InputFileParser(String inputFilePath) {
-	// this.inputFilePath = Path.of(inputFilePath);
-	// this.copying = false;
-	// }
-
-	// public InputFileParser(String inputFilePath, boolean copying) {
-	// this.inputFilePath = Path.of(inputFilePath);
-	// this.copying = copying;
-	// }
-
-	// public InputFileParser(Path inputFilePath) {
-	// this.inputFilePath = inputFilePath;
-	// this.copying = false;
-	// }
-
-	// public InputFileParser(Path inputFilePath, boolean copying) {
-	// this.inputFilePath = inputFilePath;
-	// this.copying = copying;
-	// }
 
 	public Stream<CopyItem> parse() throws IOException {
 		List<String> lines = Files.readAllLines(inputFilePath);
@@ -88,6 +68,9 @@ public class InputFileParser {
 					}
 
 					if (!copying) {
+						// it's a backup, so copyfrom is actually the copyto field in the filelistfile.
+						// the line in filelist file a.txt -> ../notingit/a.txt, we just care about the
+						// ../notingit/a.txt
 						return Util.walkBackupItem(Path.of(copyTo));
 					}
 					Path zipFile = null;

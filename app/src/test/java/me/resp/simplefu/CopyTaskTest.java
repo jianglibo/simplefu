@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
@@ -11,6 +12,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class CopyTaskTest {
+
+	@Test
+	void testCopyDirectory(@TempDir Path tmpDir) throws IOException {
+		Path dst = tmpDir.resolve("dst");
+		Files.createDirectory(dst);
+
+		String dstFilename = dst.toString();
+		Path inpuPath = UtilTest.createAfile(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
+				"fixtures -> " + dstFilename));
+		Stream<CopyItem> copyItems = InputFileParser.copyParser(inpuPath.toString()).parse();
+
+		List<CopyItem> cis = copyItems.collect(Collectors.toList());
+
+		Assertions.assertThat(cis).hasSize(8);
+
+	}
 
 	@Test
 	void testFlatCopyMissingSource(@TempDir Path tmpDir) throws IOException {

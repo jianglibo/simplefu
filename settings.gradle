@@ -12,3 +12,4 @@ plugins {
 
 rootProject.name = 'me.resp.simplefu'
 include('app')
+// include('jb')

@@ -1,12 +1,15 @@
 package me.resp.simplefu;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -130,16 +133,26 @@ public class Util {
         }
         if (Files.isDirectory(copyFromPath)) {
             return Util.exceptionHandler(() -> Files.walk(copyFromPath).map(p -> {
-                String relativePath = copyFromPath.relativize(p).toString();
-                if (relativePath.isBlank()) { // skip himself.
+                // if (relativePath.isBlank()) { // skip himself.
+                // return null;
+                // }
+                if (Files.isDirectory(p)) {
                     return null;
+                } else {
+                    String relativePath = copyFromPath.relativize(p).toString();
+                    return CopyItem.builder()
+                            .copyFrom(p.toString())
+                            .copyTo(copyTo + "/" + relativePath)
+                            .fromZipFile(zipFileIfFromZip)
+                            .fromExactly(exactly)
+                            .build();
                 }
-                return CopyItem.builder()
-                        .copyFrom(p.toString())
-                        .copyTo(copyTo + "/" + relativePath)
-                        .fromZipFile(zipFileIfFromZip)
-                        .fromExactly(true)
-                        .build();
+                // return CopyItem.builder()
+                // .copyFrom(p.toString())
+                // .copyTo(copyTo + "/" + relativePath)
+                // .fromZipFile(zipFileIfFromZip)
+                // .fromExactly(true)
+                // .build();
             }).filter(Objects::nonNull), Stream.empty(), 1, "Failed to walk directory: " + copyFromPath.toString());
         } else {
             return Stream.of(CopyItem.builder()
@@ -148,6 +161,21 @@ public class Util {
                     .fromZipFile(zipFileIfFromZip)
                     .fromExactly(exactly)
                     .build());
+        }
+    }
+
+    public static void deleteDirectory(String dirToDelete) {
+        deleteDirectory(Paths.get(dirToDelete));
+    }
+
+    public static void deleteDirectory(Path dirToDelete) {
+        try (Stream<Path> dirStream = Files.walk(dirToDelete)) {
+            dirStream
+                    .map(Path::toFile)
+                    .sorted(Comparator.reverseOrder())
+                    .forEach(File::delete);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -253,11 +281,20 @@ public class Util {
         }
         Properties properties = new Properties();
         properties.load(Files.newInputStream(file));
+        // DeploymentEnv deploymentEnv = new DeploymentEnv();
+        // deploymentEnv.setShortTimePassword(properties.getProperty("shortTimePassword"));
+        // deploymentEnv.setServerRootUri(properties.getProperty("serverRootUri"));
+        // deploymentEnv.setThisDeploymentId(Long.parseLong(properties.getProperty("thisDeploymentId")));
+        // deploymentEnv.setThisDeployDefinitionId(Long.parseLong(properties.getProperty("thisDeployDefinitionId")));
         DeploymentEnv deploymentEnv = new DeploymentEnv();
-        deploymentEnv.setShortTimePassword(properties.getProperty("shortTimePassword"));
         deploymentEnv.setServerRootUri(properties.getProperty("serverRootUri"));
-        deploymentEnv.setThisDeploymentId(properties.getProperty("thisDeploymentId"));
-        deploymentEnv.setThisDeployDefinitionId(properties.getProperty("thisDeployDefinitionId"));
+        deploymentEnv.setThisDeployDefinitionSecret(properties.getProperty("thisDeployDefinitionSecret"));
+        deploymentEnv.setMyUserId(Long.parseLong(properties.getProperty("myUserId")));
+        deploymentEnv.setThisDeployDefinitionId(Long.parseLong(properties.getProperty("thisDeployDefinitionId")));
+        deploymentEnv.setThisTemplateDeployHistory(Long.parseLong(properties.getProperty("thisTemplateDeployHistory")));
+        deploymentEnv.setThisTemplateId(Long.parseLong(properties.getProperty("thisTemplateId")));
+        deploymentEnv.setShortTimePassword(properties.getProperty("shortTimePassword"));
+        deploymentEnv.setThisDeploymentId(Long.parseLong(properties.getProperty("thisDeploymentId")));
         return deploymentEnv;
     }
 

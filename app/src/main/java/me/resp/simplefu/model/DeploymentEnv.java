@@ -10,8 +10,13 @@ import lombok.Data;
  */
 @Data
 public class DeploymentEnv {
-	private String shortTimePassword;
-	private String serverRootUri;
-	private String thisDeploymentId;
-	private String thisDeployDefinitionId;
+        private String shortTimePassword;
+        private String serverRootUri;
+        private Long thisDeploymentId;
+
+        private String thisDeployDefinitionSecret;
+        private Long myUserId;
+        private Long thisDeployDefinitionId;
+        private Long thisTemplateDeployHistory;
+        private Long thisTemplateId;
 }

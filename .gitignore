@@ -5,3 +5,9 @@
 build
 notingit
 bin
+gradle/wrapper/gradle-8.2.1-bin.zip
+lombok-1.18.28.jar
+app/src-delomboked/
+all-in-one.java
+deploy-fixtures
+not-in-git

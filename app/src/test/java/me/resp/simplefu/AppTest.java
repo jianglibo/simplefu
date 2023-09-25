@@ -42,7 +42,7 @@ class AppTest {
 
     @Test
     void testDownload() {
-        App.main(new String[] {"download", "abc.txt"});
+        App.main(new String[] { "download", "abc.txt" });
     }
 
     @Test
@@ -60,22 +60,37 @@ class AppTest {
         int exitCode = new CommandLine(new App()).execute("backup", "--backup-to",
                 backupTo.toString());
 
-        Assertions.assertThat(exitCode).isEqualTo(0);
+        Assertions.assertThat(exitCode).isEqualTo(2);
         if (Files.exists(pwd.resolve(COPY_ALWAYS_FILENAME))) {
             Files.delete(pwd.resolve(COPY_ALWAYS_FILENAME));
         }
+
+        // the content of the copy-always.txt is:
+        // fixtures/zip-playground/a.txt -> ../notingit
+        // fixtures/zip-playground/adir/b.txt -> ../notingit
+        // fixtures/zip-playground/only-if-missing.txt -> ../notingit
+        // fixtures/zip-playground/adir/nb.txt -> ../notingit/b.txt
+        // so we must ensure the existence of ../notingit
+
+        Path notingit = UtilForT.recreateNotingitDirectory();
+        
+        // prepare the files to backup
+        Path a = notingit.resolve("a.txt");
+        UtilTest.createAfile(a, "a");
+        Path b = notingit.resolve("b.txt");
+        UtilTest.createAfile(b, "b");
+        Path c = notingit.resolve("only-if-missing.txt");
+        UtilTest.createAfile(c, "c");
 
         exitCode = new CommandLine(new App()).execute("backup", "--backup-to",
                 backupTo.toString(),
                 "fixtures/copy-always.txt", "fixtures/copy-if-missing.txt");
         Assertions.assertThat(exitCode).isEqualTo(0);
-        // try (ZipTask zipTask = new ZipTask(backupTo)) {
         ZipTask zipTask = ZipTask.get(backupTo, ZipNameType.ABSOLUTE, true);
         Assertions.assertThat(zipTask.findExactly("/a.txt")).isEmpty();
         Assertions.assertThat(zipTask.findExactly("/adir/b.txt")).isEmpty();
         Assertions.assertThat(zipTask.findEndsWith("/a.txt")).isNotEmpty();
         Assertions.assertThat(zipTask.findEndsWith("/b.txt")).isNotEmpty();
-        // }
 
         // Copying ..\notingit\a.txt(file) -->
         // C:/Users/jiang/simplefu/notingit/a.txt(jar)
@@ -85,9 +100,9 @@ class AppTest {
         // C:/Users/jiang/simplefu/notingit/only-if-missing.txt(jar)
         // Copying ..\notingit\b.txt(file) -->
         // C:/Users/jiang/simplefu/notingit/b.txt(jar)
-        Path a = Path.of("../notingit/a.txt");
-        Path b = Path.of("../notingit/b.txt");
-        Path c = Path.of("../notingit/only-if-missing.txt");
+        a = Path.of("../notingit/a.txt");
+        b = Path.of("../notingit/b.txt");
+        c = Path.of("../notingit/only-if-missing.txt");
         Assertions.assertThat(a).exists();
         Assertions.assertThat(b).exists();
         Assertions.assertThat(c).exists();

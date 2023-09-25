@@ -3,5 +3,6 @@
     "java.configuration.updateBuildConfiguration": "interactive",
     "terminal.integrated.env.windows": {
      "org.slf4j.simpleLogger.defaultLogLevel": "debug"
-    }
+    },
+    "java.project.sourcePaths": []
 }
