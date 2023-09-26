@@ -16,12 +16,9 @@ public class BackupRestoreTaskTest {
 
 	@Test
 	void testBackup(@TempDir Path tmpDir) throws IOException {
-
 		// when do backup task, the source file does need to exist.
 		// what we backup is from the destination files.
-
 		// Util.ignoreMissingSource = true;
-
 		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
 		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
 
@@ -32,9 +29,11 @@ public class BackupRestoreTaskTest {
 		BackupRestoreTask backupRestoreTask = new BackupRestoreTask(inpuPath, null);
 		Path backuped = backupRestoreTask.backup();
 
+		log.info("backuped: {}, length: {}", backuped, Files.size(backuped));
+
 		Assertions.assertThat(backuped).exists();
 		Assertions.assertThat(backuped).hasFileName("backup.zip");
-		ZipTask zipTask = ZipTask.get(backuped, ZipNameType.ABSOLUTE, false);
+		ZipTask zipTask = ZipTask.get(backuped, ZipNameType.ABSOLUTE, true);
 		zipTask.allEntryPath().map(Path::toString).forEach(log::info);
 		Assertions.assertThat(zipTask.findExactly("a/a.txt")).isEmpty();
 		Assertions.assertThat(zipTask.findExactly("/b/b.txt")).isEmpty();
@@ -68,10 +67,8 @@ public class BackupRestoreTaskTest {
 		// here we got a directory a which contains 2 files.
 		zipTask.push(afile, "a/a.txt");
 		zipTask.push(bfile, "a/b.txt");
-
 		// when do backup, the copyTo is meaning which to backup and the meaning of the
 		// copyTo will vary depending on the copyFrom.
-
 		// We should copy the files to the dst first or else the backup will skip the
 		// missing items.
 		BackupRestoreTask backupRestoreTask = new BackupRestoreTask(InputFileParser.restoreParser("")

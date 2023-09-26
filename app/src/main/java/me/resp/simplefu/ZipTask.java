@@ -40,7 +40,7 @@ public class ZipTask implements Closeable {
 		if (copyTo == null) {
 			switch (zipNameType) {
 				case ABSOLUTE:
-					return zipFileSystem.getPath( copyFrom.toAbsolutePath().normalize().toString());
+					return zipFileSystem.getPath(copyFrom.toAbsolutePath().normalize().toString());
 				case FLATTEN:
 					return zipFileSystem.getPath(copyFrom.getFileName().toString());
 				default:
@@ -104,14 +104,22 @@ public class ZipTask implements Closeable {
 
 	private static Map<String, ZipTask> cache = new HashMap<>();
 
-	public static synchronized ZipTask get(Path zipFile, ZipNameType zipNameType, boolean readonly) {
-		String key = String.format("%s-%s", zipFile, zipNameType);
-		if (!cache.containsKey(key)) {
-			ZipTask zipTask = new ZipTask(zipFile, zipNameType);
-			Util.exceptionHandler(() -> zipTask.start(readonly), 1, "Failed to open zip file: " + zipFile);
-			cache.put(key, zipTask);
-		}
-		return cache.get(key);
+	// public static synchronized ZipTask get(Path zipFile, ZipNameType zipNameType,
+	// boolean readonly) {
+	// String key = String.format("%s-%s", zipFile, zipNameType);
+	// if (!cache.containsKey(key)) {
+	// ZipTask zipTask = new ZipTask(zipFile, zipNameType);
+	// Util.exceptionHandler(() -> zipTask.start(readonly), 1, "Failed to open zip
+	// file: " + zipFile);
+	// cache.put(key, zipTask);
+	// }
+	// return cache.get(key);
+	// }
+	
+	public static ZipTask get(Path zipFile, ZipNameType zipNameType, boolean readonly) {
+		ZipTask zipTask = new ZipTask(zipFile, zipNameType);
+		Util.exceptionHandler(() -> zipTask.start(readonly), 1, "Failed to open zip file: " + zipFile);
+		return zipTask;
 	}
 
 	public static synchronized void clearCache() {

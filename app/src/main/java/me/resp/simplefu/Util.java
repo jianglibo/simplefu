@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,9 +44,15 @@ public class Util {
         if (create) {
             env.put("create", create ? "true" : "false");
         }
-        return FileSystems.newFileSystem(uri, env);
-    }
 
+        try {
+            // try to get the file system
+            return FileSystems.getFileSystem(uri);
+        } catch (FileSystemNotFoundException e) {
+            // file system does not exist, create a new one
+            return FileSystems.newFileSystem(uri, env);
+        }
+    }
     public static Path relativeFromRoot(Path maybeAbsolutePath) {
         if (maybeAbsolutePath.isAbsolute()) {
             return maybeAbsolutePath.getRoot().relativize(maybeAbsolutePath);
@@ -263,6 +270,14 @@ public class Util {
         return paths;
     }
 
+    private static Long parseLongId(String v) {
+        if (v == null || v.isBlank()) {
+            return null;
+        } else {
+            return Long.parseLong(v);
+        }
+    }
+
     /**
      * deployment.env.properties content:
      * shortTimePassword=
@@ -281,20 +296,15 @@ public class Util {
         }
         Properties properties = new Properties();
         properties.load(Files.newInputStream(file));
-        // DeploymentEnv deploymentEnv = new DeploymentEnv();
-        // deploymentEnv.setShortTimePassword(properties.getProperty("shortTimePassword"));
-        // deploymentEnv.setServerRootUri(properties.getProperty("serverRootUri"));
-        // deploymentEnv.setThisDeploymentId(Long.parseLong(properties.getProperty("thisDeploymentId")));
-        // deploymentEnv.setThisDeployDefinitionId(Long.parseLong(properties.getProperty("thisDeployDefinitionId")));
         DeploymentEnv deploymentEnv = new DeploymentEnv();
         deploymentEnv.setServerRootUri(properties.getProperty("serverRootUri"));
         deploymentEnv.setThisDeployDefinitionSecret(properties.getProperty("thisDeployDefinitionSecret"));
-        deploymentEnv.setMyUserId(Long.parseLong(properties.getProperty("myUserId")));
-        deploymentEnv.setThisDeployDefinitionId(Long.parseLong(properties.getProperty("thisDeployDefinitionId")));
-        deploymentEnv.setThisTemplateDeployHistory(Long.parseLong(properties.getProperty("thisTemplateDeployHistory")));
-        deploymentEnv.setThisTemplateId(Long.parseLong(properties.getProperty("thisTemplateId")));
+        deploymentEnv.setMyUserId(parseLongId(properties.getProperty("myUserId")));
+        deploymentEnv.setThisDeployDefinitionId(parseLongId(properties.getProperty("thisDeployDefinitionId")));
+        deploymentEnv.setThisTemplateDeployHistory(parseLongId(properties.getProperty("thisTemplateDeployHistory")));
+        deploymentEnv.setThisTemplateId(parseLongId(properties.getProperty("thisTemplateId")));
         deploymentEnv.setShortTimePassword(properties.getProperty("shortTimePassword"));
-        deploymentEnv.setThisDeploymentId(Long.parseLong(properties.getProperty("thisDeploymentId")));
+        deploymentEnv.setThisDeploymentId(parseLongId(properties.getProperty("thisDeploymentId")));
         return deploymentEnv;
     }
 
