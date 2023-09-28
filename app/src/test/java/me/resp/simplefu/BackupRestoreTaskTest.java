@@ -19,10 +19,10 @@ public class BackupRestoreTaskTest {
 		// when do backup task, the source file does need to exist.
 		// what we backup is from the destination files.
 		// Util.ignoreMissingSource = true;
-		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
-		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
+		Path afile = UtilForT.createAfileWithContent(tmpDir.resolve("a.txt"), "a");
+		Path bfile = UtilForT.createAfileWithContent(tmpDir.resolve("b.txt"), "b");
 
-		Path inpuPath = UtilTest.createAfile(tmpDir.resolve("copy-always.txt"),
+		Path inpuPath = UtilForT.createAfileWithContent(tmpDir.resolve("copy-always.txt"),
 				String.join(System.lineSeparator(),
 						"a/a.txt -> " + afile.toString(),
 						"/b/b.txt -> " + bfile.toString()));
@@ -61,8 +61,8 @@ public class BackupRestoreTaskTest {
 		Path azip = tmpDir.resolve("a.zip");
 		Path dst = tmpDir.resolve("dst");
 		Files.createDirectory(dst);
-		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
-		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
+		Path afile = UtilForT.createAfileWithContent(tmpDir.resolve("a.txt"), "a");
+		Path bfile = UtilForT.createAfileWithContent(tmpDir.resolve("b.txt"), "b");
 		ZipTask zipTask = ZipTask.get(azip, ZipNameType.ABSOLUTE, false);
 		// here we got a directory a which contains 2 files.
 		zipTask.push(afile, "a/a.txt");

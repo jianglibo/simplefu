@@ -19,7 +19,7 @@ public class CopyTaskTest {
 		Files.createDirectory(dst);
 
 		String dstFilename = dst.toString();
-		Path inpuPath = UtilTest.createAfile(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
+		Path inpuPath = UtilForT.createAfileWithContent(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
 				"fixtures -> " + dstFilename));
 		Stream<CopyItem> copyItems = InputFileParser.copyParser(inpuPath.toString()).parse();
 
@@ -35,7 +35,7 @@ public class CopyTaskTest {
 		Files.createDirectory(dst);
 
 		String dstFilename = dst.toString();
-		Path inpuPath = UtilTest.createAfile(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
+		Path inpuPath = UtilForT.createAfileWithContent(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
 				"b/b.txt -> " + dstFilename));
 		Stream<CopyItem> copyItems = InputFileParser.copyParser(inpuPath.toString()).parse();
 		CopyTask copyTask = new CopyTask(copyItems, true);
@@ -54,8 +54,8 @@ public class CopyTaskTest {
 		Path azip = tmpDir.resolve("a.zip");
 		Path dst = tmpDir.resolve("dst");
 		Files.createDirectory(dst);
-		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
-		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
+		Path afile = UtilForT.createAfileWithContent(tmpDir.resolve("a.txt"), "a");
+		Path bfile = UtilForT.createAfileWithContent(tmpDir.resolve("b.txt"), "b");
 
 		ZipTask zipTask = ZipTask.get(azip, ZipNameType.ABSOLUTE, false);
 		zipTask.push(afile, "a/a.txt");
@@ -68,7 +68,7 @@ public class CopyTaskTest {
 
 		String zipFileName = azip.toString();
 		String dstFilename = dst.toString();
-		Path inpuPath = UtilTest.createAfile(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
+		Path inpuPath = UtilForT.createAfileWithContent(tmpDir.resolve("copy-always.txt"), String.join(System.lineSeparator(),
 				zipFileName + "!a/a.txt -> " + dstFilename,
 				zipFileName + "!/b/b.txt -> " + dstFilename));
 		Stream<CopyItem> copyItems = InputFileParser.copyParser(inpuPath.toString()).parse();
@@ -80,13 +80,38 @@ public class CopyTaskTest {
 	}
 
 	@Test
+	void testSkip(@TempDir Path tmpDir) throws IOException {
+		// create a zip file for test.
+		Path azip = tmpDir.resolve("a.zip");
+		Path dst = tmpDir.resolve("dst");
+		Files.createDirectory(dst);
+		Path afile = UtilForT.createAfileWithContent(tmpDir.resolve("a.txt"), "a");
+		Path bfile = UtilForT.createAfileWithContent(tmpDir.resolve("b.txt"), "b");
+		ZipTask zipTask = ZipTask.get(azip, ZipNameType.ABSOLUTE, false);
+		// here we got a directory a which contains 2 files.
+		zipTask.push(afile, "a/a.txt");
+		zipTask.push(bfile, "a/b.txt");
+		String zipFileName = azip.toString();
+
+		String dstFilename = dst.toString() + "/bbb";
+		Files.createDirectories(Path.of(dstFilename));
+		Files.copy(afile, Path.of(dstFilename, "a.txt"));
+		// we point the copyFrom to a directory in a zip file.
+		Stream<CopyItem> copyItems = InputFileParser.copyParser("")
+				.parse(List.of(zipFileName + "!a -> " + dstFilename));
+		CopyTask copyTask = new CopyTask(copyItems, false);
+		copyTask.start();
+		Assertions.assertThat(copyTask.getSkipCount()).isEqualTo(1);
+	}
+
+	@Test
 	void testWithDirectory(@TempDir Path tmpDir) throws IOException {
 		// create a zip file for test.
 		Path azip = tmpDir.resolve("a.zip");
 		Path dst = tmpDir.resolve("dst");
 		Files.createDirectory(dst);
-		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
-		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
+		Path afile = UtilForT.createAfileWithContent(tmpDir.resolve("a.txt"), "a");
+		Path bfile = UtilForT.createAfileWithContent(tmpDir.resolve("b.txt"), "b");
 		ZipTask zipTask = ZipTask.get(azip, ZipNameType.ABSOLUTE, false);
 		// here we got a directory a which contains 2 files.
 		zipTask.push(afile, "a/a.txt");

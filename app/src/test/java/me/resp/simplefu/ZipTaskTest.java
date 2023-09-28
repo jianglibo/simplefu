@@ -26,7 +26,7 @@ public class ZipTaskTest {
 		System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
 
 		Path azip = tmpDir.resolve("a.zip");
-		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
+		Path afile = UtilForT.createAfileWithContent(tmpDir.resolve("a.txt"), "a");
 
 		ZipTask zipTask = ZipTask.get(azip, ZipNameType.ABSOLUTE, false);
 		zipTask.push(afile, null); // null mean absolute.
@@ -39,7 +39,7 @@ public class ZipTaskTest {
 	void testAddFileFlatten(@TempDir Path tmpDir) throws IOException {
 		System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
 		Path azip = tmpDir.resolve("a.zip");
-		Path bfile = UtilTest.createAfile(tmpDir.resolve("b.txt"), "b");
+		Path bfile = UtilForT.createAfileWithContent(tmpDir.resolve("b.txt"), "b");
 		ZipTask zipTask = ZipTask.get(azip, ZipNameType.FLATTEN, false);
 		zipTask.push(bfile, null);
 		String zentryName = bfile.getFileName().toString();
@@ -56,7 +56,7 @@ public class ZipTaskTest {
 
 		System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
 		Path bzip = tmpDir.resolve("b.zip");
-		Path afile = UtilTest.createAfile(tmpDir.resolve("a.txt"), "a");
+		Path afile = UtilForT.createAfileWithContent(tmpDir.resolve("a.txt"), "a");
 		ZipTask zipTask1 = ZipTask.get(bzip, ZipNameType.FLATTEN, false);
 		String zentryName = "xxx/a.txt";
 		zipTask1.push(afile, zentryName);

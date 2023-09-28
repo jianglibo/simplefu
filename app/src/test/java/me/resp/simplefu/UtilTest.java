@@ -15,15 +15,6 @@ import me.resp.simplefu.model.DeploymentEnv;
 
 public class UtilTest {
 
-	public static Path createAfile(Path file, String content) {
-		try {
-			Files.write(file, content.getBytes());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return file;
-	}
-
 	@Test
 	void testCalPath(@TempDir Path tmpDir) {
 
@@ -77,8 +68,8 @@ public class UtilTest {
 		Path d = tmpDir.resolve("d");
 		Files.createDirectories(d);
 
-		Path a = createAfile(d.resolve("a"), "a");
-		Path b = createAfile(d.resolve("b"), "b");
+		Path a = UtilForT.createAfileWithContent(d.resolve("a"), "a");
+		Path b = UtilForT.createAfileWithContent(d.resolve("b"), "b");
 
 		Path zip = tmpDir.resolve("zip.zip");
 
@@ -106,7 +97,7 @@ public class UtilTest {
 	@Test
 	void loadDeploymentEnv() throws IOException {
 		Path p = Path.of("src/test/resources/deployment.env.properties");
-		DeploymentEnv denv =  Util.loadDeploymentEnv(p);
+		DeploymentEnv denv = Util.loadDeploymentEnv(p);
 		/*
 		 * conent of deployment.env.properties
 		 * shortTimePassword=apassword

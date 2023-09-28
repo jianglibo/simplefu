@@ -2,6 +2,7 @@ package me.resp.simplefu;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
@@ -29,6 +30,8 @@ import me.resp.simplefu.model.DeploymentEnv;
 public class Util {
     public static Integer errorTolerance = 0;
 
+    public static final String DEPLOYMENT_ENV_PROPERTIES = "deployment.env.properties";
+
     @Getter
     private static boolean ignoreMissingSource = false;
 
@@ -53,6 +56,7 @@ public class Util {
             return FileSystems.newFileSystem(uri, env);
         }
     }
+
     public static Path relativeFromRoot(Path maybeAbsolutePath) {
         if (maybeAbsolutePath.isAbsolute()) {
             return maybeAbsolutePath.getRoot().relativize(maybeAbsolutePath);
@@ -60,8 +64,8 @@ public class Util {
         return maybeAbsolutePath;
     }
 
-    public static String printCopyFromAndTo(Path copyFrom, Path copyTo, String... extraMessages) {
-        String message = String.format("Copying %s(%s) --> %s(%s)", copyFrom,
+    public static String printFromAndTo(String prefix, Path copyFrom, Path copyTo, String... extraMessages) {
+        String message = String.format("%s %s(%s) --> %s(%s)", prefix, copyFrom,
                 copyFrom.getFileSystem().provider().getScheme(), copyTo,
                 copyTo.getFileSystem().provider().getScheme());
         System.out.println(message);
@@ -69,6 +73,14 @@ public class Util {
             System.out.println(extraMessage);
         }
         return message;
+    }
+
+    public static String printCopyFromAndTo(Path copyFrom, Path copyTo, String... extraMessages) {
+        return printFromAndTo("Copying", copyFrom, copyTo, extraMessages);
+    }
+
+    public static String printSkipFromAndTo(Path copyFrom, Path copyTo, String... extraMessages) {
+        return printFromAndTo("Skipping", copyFrom, copyTo, extraMessages);
     }
 
     public static Path copyFile(Path copyFrom, Path copyTo) throws IOException {
@@ -290,12 +302,16 @@ public class Util {
      * @throws IOException
      */
     public static DeploymentEnv loadDeploymentEnv(Path file) throws IOException {
-        file = file == null ? Path.of("deployment.env.properties") : file;
+        file = file == null ? Path.of(DEPLOYMENT_ENV_PROPERTIES) : file;
         if (!Files.exists(file)) {
             return null;
         }
+        return loadDeploymentEnv(Files.readString(file));
+    }
+
+    public static DeploymentEnv loadDeploymentEnv(String content) throws IOException {
         Properties properties = new Properties();
-        properties.load(Files.newInputStream(file));
+        properties.load(new StringReader(content));
         DeploymentEnv deploymentEnv = new DeploymentEnv();
         deploymentEnv.setServerRootUri(properties.getProperty("serverRootUri"));
         deploymentEnv.setThisDeployDefinitionSecret(properties.getProperty("thisDeployDefinitionSecret"));

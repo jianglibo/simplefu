@@ -19,7 +19,6 @@ import picocli.CommandLine.ParseResult;
 
 @Command(name = "simplefu", mixinStandardHelpOptions = true, version = "simplefu 1.0", description = "a companion tool for resp.me deployments")
 public class App {
-    public static final String DEPLOYMENT_ENV_FILENAME = "deployment.env.properties";
     @Option(names = {
             "--error-tolerance" }, description = "the level of tolerance before aborting the task. default: ${DEFAULT-VALUE}, means ZERO tolerance.")
     Integer errorTolerance = 0;
@@ -27,7 +26,7 @@ public class App {
     @Option(names = "--ignore-missing-source", description = "ignore file not exists error.")
     boolean ignoreMissingSource;
 
-    @Option(names = "--deployment-env-file", defaultValue = DEPLOYMENT_ENV_FILENAME, description = "the path of deployment.env.properties file.")
+    @Option(names = "--deployment-env-file", defaultValue = AppWithEnv.DEPLOYMENT_ENV_FILENAME, description = "the path of deployment.env.properties file.")
     Path deploymentEnvFile;
 
     @Command(mixinStandardHelpOptions = true, description = "copy all the files listed in a description file.")
@@ -82,7 +81,7 @@ public class App {
             return 1;
         }
         if (inputFile == null) {
-            PureHttpClient.downloadDeploymentDownloadsFromAzure(null, deploymentEnv.getServerRootUri(),
+            PureHttpClient.downloadDependenciesDownloadsFromAzure(null, deploymentEnv.getServerRootUri(),
                     deploymentEnv.getShortTimePassword());
         } else {
             PureHttpClient.downloadDeploymentDownloadsFromAzureOneFile(null, inputFile,
@@ -113,6 +112,8 @@ public class App {
 
             @Option(names = {
                     "--upload-to-azure" }, description = "upload the zip file to azure and associate with this deployment.") boolean uploadToAzure,
+            @Option(names = {
+                    "--deployment-id" }, description = "the deployment id to attach.") Long deploymentId,
             @Parameters(index = "0", arity = "1..*", paramLabel = "<filelistfiles>", description = "files which list the files to process.") List<String> inputFiles)
             throws IOException, InterruptedException {
         inputFiles = inputFiles == null ? new ArrayList<>() : inputFiles;
@@ -132,7 +133,7 @@ public class App {
         if (uploadToAzure) {
             DeploymentEnv deploymentEnv = Util.loadDeploymentEnv(deploymentEnvFile);
             PureHttpClient.uploadToAzure(backuped, deploymentEnv.getServerRootUri(),
-                    deploymentEnv.getShortTimePassword(), 10, "azureblob");
+                    deploymentEnv.getShortTimePassword(), "azureblob", deploymentId);
         }
         return 0;
     }

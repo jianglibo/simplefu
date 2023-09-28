@@ -76,11 +76,11 @@ class AppTest {
         
         // prepare the files to backup
         Path a = notingit.resolve("a.txt");
-        UtilTest.createAfile(a, "a");
+        UtilForT.createAfileWithContent(a, "a");
         Path b = notingit.resolve("b.txt");
-        UtilTest.createAfile(b, "b");
+        UtilForT.createAfileWithContent(b, "b");
         Path c = notingit.resolve("only-if-missing.txt");
-        UtilTest.createAfile(c, "c");
+        UtilForT.createAfileWithContent(c, "c");
 
         exitCode = new CommandLine(new App()).execute("backup", "--backup-to",
                 backupTo.toString(),
